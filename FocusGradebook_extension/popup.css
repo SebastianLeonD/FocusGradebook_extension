@@ -1,0 +1,307 @@
+/* Reset default box behavior and spacing */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Body and background styling */
+html, body {
+  width: 275px;
+  height: 205px;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(to bottom, #0a2540, #145da0, #c6e6ff);
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px;
+  transition: height 0.3s ease-in-out;
+}
+
+/* Main outer container */
+.container {
+  width: 95%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  border-radius: 18px;
+  padding: 16px 14px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  transition: height 0.3s ease-in-out;
+}
+
+/* Title shown only on home screen */
+#main-title {
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+  color: #ffffff;
+  text-align: center;
+  display: block;
+}
+
+/* Title shown only on calculator screen */
+#calculator-title {
+  font-size: 1.2rem;
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: 10px;
+  display: none;
+}
+
+/* Mode selection block - buttons centered */
+#mode-selection {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+/* Mode buttons for unweighted and weighted */
+.mode-btn {
+  padding: 10px;
+  font-size: 0.95rem;
+  background: linear-gradient(to right, #0e3a5f, #1d5c8f);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  width: 100%;
+}
+
+.mode-btn:hover {
+  background: linear-gradient(to right, #15466d, #226da4);
+}
+
+/* Calculator form (hidden by default) */
+#calculator-form {
+  height: 475px;
+  margin-top: 4px;
+  width: 100%;
+  display: none;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Back button styling */
+.back-btn {
+  background-color: #ffffff;
+  color: #0a2540;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background 0.2s;
+}
+
+.back-btn:hover {
+  background-color: #e0ecf9;
+}
+
+/* Input fields */
+input {
+  width: 100%;
+  padding: 8px;
+  margin: 6px 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 0.85rem;
+}
+
+input::placeholder {
+  color: #e0ecf9;
+}
+
+/* Category dropdown container */
+.category-container {
+  width: 100%;
+  display: none; /* Initially hidden, shown in weighted mode */
+  flex-direction: row;
+  gap: 5px;
+  margin: 6px 0;
+}
+
+/* Styling for the category dropdown */
+.category-dropdown {
+  flex-grow: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 0.85rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+  cursor: pointer;
+}
+
+.category-dropdown option {
+  background-color: #0a2540;
+  color: white;
+}
+
+/* Add & Reset buttons */
+button#add,
+button#reset {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#add {
+  background-color: #2a7fdc;
+  color: #fff;
+}
+
+#add:hover {
+  background-color: #1b68b8;
+}
+
+#reset {
+  background-color: #ffffff;
+  color: #0a2540;
+}
+
+#reset:hover {
+  background-color: #e0ecf9;
+}
+
+/* Add this to popup.css */
+
+/* Help button styling */
+#help-button {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  width: 24px;
+  height: 24px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+#help-button:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+}
+
+/* Modal styling */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  overflow: auto;
+}
+
+.modal-content {
+  background: linear-gradient(to bottom, #0f3b61, #1a5c91);
+  margin: 5% auto;
+  padding: 20px;
+  width: 90%;
+  max-width: 500px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  color: white;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.close-btn {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: white;
+}
+
+/* Help content styling */
+.help-section {
+  margin-bottom: 20px;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.help-section h3 {
+  margin-top: 0;
+  color: #c6e6ff;
+  font-size: 1.1rem;
+  border-bottom: 1px solid rgba(162, 28, 28, 0.2);
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+}
+
+.help-section h4 {
+  color: #c6e6ff;
+  margin: 15px 0 5px 0;
+  font-size: 0.95rem;
+}
+
+.help-section p {
+  margin: 8px 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.help-section ol, 
+.help-section ul {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding-left: 25px;
+}
+
+.help-section li {
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+}
+
+.modal h2 {
+  text-align: center;
+  color: #c6e6ff;
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+}
