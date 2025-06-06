@@ -12,11 +12,7 @@ This extension only runs on Focus School Software gradebook pages as specified i
 
 Data Storage
 -----------
-The extension uses Chrome's storage API only to temporarily store:
-- Your hypothetical assignments for the current session
-- Assignment categories from your gradebook
-
-This data remains on your device and is not transmitted elsewhere.
+The extension does not use any persistent storage. All calculations and hypothetical grade simulations are performed temporarily in memory and are cleared when the page is refreshed or closed.
 
 Updates
 -------
