@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Focus Grade Calculator",
+  "version": "1.6.0",
+  "description": "Secure floating grade calculator for Focus gradebook with enhanced privacy protection.",
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://focus.schooldomain.com/*",
+    "https://*.focusschoolsoftware.com/*"
+  ],
+  "action": {
+    "default_icon": "128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.focusschoolsoftware.com/focus/Modules.php?modname=Grades/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "icons": {
+    "16": "16.png",
+    "32": "32.png", 
+    "48": "48.png",
+    "128": "128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline';"
+  },
+  "web_accessible_resources": [],
+  "externally_connectable": {
+    "matches": []
+  }
+}
