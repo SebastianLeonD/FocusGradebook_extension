@@ -1,0 +1,61 @@
+{
+  "manifest_version": 3,
+  "name": "Focus Grade Calculator",
+  "version": "1.6.2",
+  "description": "Secure floating grade calculator for Focus gradebook with enhanced privacy protection.",
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://focus.schooldomain.com/*",
+    "https://*.focusschoolsoftware.com/*"
+  ],
+  "action": {
+    "default_icon": "128.png"
+  },
+  "background": {
+    "service_worker": "js/core/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.focusschoolsoftware.com/focus/Modules.php?*modname=Grades*",
+        "https://*.focusschoolsoftware.com/focus/Modules.php?*Grades*"
+      ],
+      "js": [
+        "js/ui/popup-html.js",
+        "js/features/help-modal/help-modal-html.js",
+        "js/features/help-modal/help-modal-css.js",
+        "js/core/content-utilities.js",
+        "js/ui/theme-system.js",
+        "js/calculations/content-calculations.js",
+        "js/features/gpa-calculator.js",
+        "js/features/feedback-system.js",
+        "js/core/content-main.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "icons": {
+    "16": "16.png",
+    "32": "32.png",
+    "48": "48.png",
+    "128": "128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline';"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "popup/tutorial.mp4",
+        "popup/popup-tutorial.mp4",
+        "popup/Feature-preview.mp4"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}
