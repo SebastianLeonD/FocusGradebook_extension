@@ -36,21 +36,10 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 
 // Handle the click event (ONLY fires when popup is set to '')
 chrome.action.onClicked.addListener((tab) => {
-    console.log("🖱️ Extension icon clicked on Focus page!");
-    
-    // Double-check URL just in case, though the popup logic should prevent this
     if (isFocusUrl(tab.url)) {
         chrome.tabs.sendMessage(tab.id, { type: "openFloatingCalculator" }, (response) => {
             if (chrome.runtime.lastError) {
-                console.error("❌ Error sending message:", chrome.runtime.lastError.message);
-                // If the content script isn't loaded (e.g. on a Focus page where injection failed),
-                // we might want to fallback to the popup or an alert.
-                // For now, let's just log it. 
-                // Note: The previous alert() logic is replaced by the 'wrong_page.html' popup for non-Focus pages.
-                // But for Focus pages without the script, the user currently gets no feedback.
-                // We could inject the script here dynamically if missing, but let's stick to the requested scope.
-            } else {
-                console.log("✅ Message sent successfully");
+                console.error("Error sending message:", chrome.runtime.lastError.message);
             }
         });
     }

@@ -1,7 +1,7 @@
 /**
  * THEME-SYSTEM.JS
  * Handles popup color themes accessed via settings gear icon
- * FIXED: Better GPA button color, smooth transitions, feedback box styling
+ * Better GPA button color, smooth transitions, feedback box styling
  */
 
 // Enhanced popup themes with better GPA button colors
@@ -101,22 +101,15 @@ const popupThemes = {
 };
 
 /**
- * FIXED: Applies popup theme with smooth transitions and proper sizing
+ * Applies popup theme with smooth transitions and proper sizing
  */
 function applyPopupTheme(themeName) {
     try {
-        console.log('🎨 THEME SWITCH - Applying theme:', themeName);
-        
         const popup = document.getElementById('focus-grade-simulator-popup');
         if (!popup) {
-            console.error('❌ THEME SWITCH - Popup not found');
+            console.error('THEME SWITCH - Popup not found');
             return;
         }
-
-        // Preserve current size class
-        const currentSizeClass = popup.classList.contains('size-xlarge') ? 'size-xlarge' :
-                                popup.classList.contains('size-large') ? 'size-large' :
-                                popup.classList.contains('size-medium') ? 'size-medium' : 'size-small';
 
         // Remove existing style
         const existingStyle = document.getElementById('fgs-styles');
@@ -142,19 +135,18 @@ function applyPopupTheme(themeName) {
                 if (typeof applySizingForCurrentInterface === 'function') {
                     applySizingForCurrentInterface();
                 }
-                console.log('✅ THEME SWITCH - Applied theme:', theme.name, 'with adaptive sizing');
             } catch (innerError) {
-                console.log('⚠️ THEME SWITCH - sizing fallback', innerError);
+                // Sizing fallback - non-critical
             }
         }, 50);
         
     } catch (error) {
-        console.error('❌ THEME SWITCH - Error applying theme:', error);
+        console.error('THEME SWITCH - Error applying theme:', error);
     }
 }
 
 /**
- * FIXED: Enhanced sizing control with smooth transitions
+ * Enhanced sizing control with smooth transitions
  */
 function applySizingForCurrentInterface() {
     try {
@@ -162,12 +154,12 @@ function applySizingForCurrentInterface() {
             setPopupSizeForInterface(determineActiveInterface());
         }
     } catch (error) {
-        console.error('❌ Error applying sizing:', error);
+        console.error('Error applying sizing:', error);
     }
 }
 
 /**
- * FIXED: Generates themed CSS with better colors and feedback box
+ * Generates themed CSS with better colors and feedback box
  */
 function generateThemedCSS(theme) {
     const isLightTheme = theme.textColor === '#212529' || theme.textColor === '#000000';
@@ -194,13 +186,8 @@ function generateThemedCSS(theme) {
     const addDropdownBackground = isLightTheme ? 'rgba(0, 0, 0, 0.05)' : 'rgba(0, 0, 0, 0.4)';
     const addDropdownBorder = isLightTheme ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.3)';
     const addDropdownColor = isLightTheme ? '#0a2540' : '#ffffff';
-    const warningBackground = isLightTheme ? 'rgba(255, 243, 205, 0.85)' : 'rgba(255, 193, 7, 0.15)';
-    const warningBorder = isLightTheme ? '1px solid rgba(255, 193, 7, 0.4)' : '1px solid rgba(255, 193, 7, 0.3)';
-    const warningTextColor = isLightTheme ? '#856404' : theme.textColor;
-    const warningHeadingColor = isLightTheme ? '#d39e00' : '#ffc107';
-    
     // Special handling for transparent mode
-    const popupBackground = theme.isTransparent ? theme.gradient : theme.gradient;
+    const popupBackground = theme.gradient;
     const popupBackdrop = theme.backdrop ? `backdrop-filter: ${theme.backdrop};` : 'backdrop-filter: blur(10px);';
     const popupBorder = theme.border || '1px solid rgba(255, 255, 255, 0.1)';
     
@@ -212,6 +199,7 @@ function generateThemedCSS(theme) {
             width: 450px;
             background: ${popupBackground};
             ${popupBackdrop}
+            color: ${theme.textColor};
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             z-index: 10000;
@@ -224,7 +212,7 @@ function generateThemedCSS(theme) {
             transform-origin: top right;
         }
 
-        /* FIXED SIZING - Always default to small with smooth transitions */
+        /* Sizing - Always default to small with smooth transitions */
         #focus-grade-simulator-popup.size-small {
             width: 520px !important;
             min-height: auto;
@@ -297,10 +285,10 @@ function generateThemedCSS(theme) {
             align-items: center;
             gap: 3px;
             font-size: 10px;
-            padding: 0 6px;
-            height: 18px;
+            padding: 0 8px;
+            height: 26px;
             white-space: nowrap;
-            transition: all 0.2s;
+            transition: background 0.2s ease, transform 0.2s ease;
         }
 
         .fgs-tutorial:hover {
@@ -319,10 +307,10 @@ function generateThemedCSS(theme) {
             align-items: center;
             gap: 2px;
             font-size: 10px;
-            padding: 0 6px;
-            height: 18px;
+            padding: 0 8px;
+            height: 26px;
             white-space: nowrap;
-            transition: all 0.2s;
+            transition: background 0.2s ease, transform 0.2s ease;
         }
 
         .fgs-new-features-btn:hover {
@@ -332,8 +320,8 @@ function generateThemedCSS(theme) {
         }
 
         .fgs-help, .fgs-settings, .fgs-minimize, .fgs-close {
-            width: 18px;
-            height: 18px;
+            width: 26px;
+            height: 26px;
             border: none;
             border-radius: 50%;
             background: ${theme.isTransparent ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.2)'};
@@ -342,9 +330,9 @@ function generateThemedCSS(theme) {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: bold;
-            transition: all 0.2s;
+            transition: background 0.2s ease, transform 0.2s ease;
             flex-shrink: 0;
         }
         
@@ -406,18 +394,18 @@ function generateThemedCSS(theme) {
         }
         
         .fgs-settings-back {
-            background: rgba(255, 255, 255, 0.95);
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.95)'};
             color: #0a2540;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid ${isLightTheme ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.3)'};
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 11px;
             cursor: pointer;
             font-weight: 600;
         }
-        
+
         .fgs-settings-back:hover {
-            background: rgba(255, 255, 255, 1);
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 1)'};
             transform: translateY(-1px);
         }
         
@@ -450,9 +438,9 @@ function generateThemedCSS(theme) {
         }
         
         .fgs-theme-dropdown {
-            background: #000000 !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            background: ${gradeSelectBackground};
+            color: ${gradeSelectColor};
+            border: 1px solid ${gradeSelectBorder};
             padding: 4px 6px;
             border-radius: 4px;
             font-size: 11px;
@@ -460,7 +448,7 @@ function generateThemedCSS(theme) {
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
-            background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%23ffffff' d='M2 0L0 2h4zm0 5L0 3h4z'/></svg>");
+            background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='${isLightTheme ? '%230a2540' : '%23ffffff'}' d='M2 0L0 2h4zm0 5L0 3h4z'/></svg>");
             background-repeat: no-repeat;
             background-position: right 6px center;
             background-size: 8px;
@@ -495,25 +483,25 @@ function generateThemedCSS(theme) {
         }
         
         .fgs-mode-btn {
-            padding: 10px; 
-            background: linear-gradient(to right, #0e3a5f, #1d5c8f);
-            color: white; 
-            border: none; 
-            border-radius: 8px; 
+            padding: 10px;
+            background: ${theme.buttonPrimary};
+            color: white;
+            border: none;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 13px; 
-            transition: all 0.2s; 
+            font-size: 13px;
+            transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
             font-weight: 600;
             margin-bottom: 6px;
         }
-        
+
         .fgs-mode-btn:hover {
-            background: linear-gradient(to right, #15466d, #226da4);
+            opacity: 0.85;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(30, 144, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
         
-        /* FIXED: Better GPA Calculator button color */
+        /* Better GPA Calculator button color */
         .fgs-mode-btn-gpa {
             background: ${theme.gpaButtonColor} !important;
             border: 2px solid ${theme.isTransparent ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'};
@@ -535,19 +523,19 @@ function generateThemedCSS(theme) {
         }
         
         .fgs-back-btn {
-            background: rgba(255, 255, 255, 0.95); 
-            color: #0a2540; 
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 5px 8px; 
-            border-radius: 4px; 
-            font-size: 11px; 
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.95)'};
+            color: #0a2540;
+            border: 1px solid ${isLightTheme ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.3)'};
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 11px;
             cursor: pointer;
             align-self: flex-start;
             font-weight: 600;
         }
-        
+
         .fgs-back-btn:hover {
-            background: rgba(255, 255, 255, 1);
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 1)'};
             transform: translateY(-1px);
         }
         
@@ -564,17 +552,17 @@ function generateThemedCSS(theme) {
             color: ${placeholderColor}; 
         }
         
-        /* FIXED DROPDOWN STYLING */
+        /* Dropdown styling */
         .fgs-dropdown {
-            background: #000000 !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            background: ${gradeSelectBackground};
+            color: ${gradeSelectColor};
+            border: 1px solid ${gradeSelectBorder};
         }
-        
+
         .fgs-dropdown option {
-            background: #000000 !important;
-            color: #ffffff !important;
-            padding: 6px !important;
+            background: ${isLightTheme ? '#ffffff' : '#000000'};
+            color: ${isLightTheme ? '#0a2540' : '#ffffff'};
+            padding: 6px;
         }
         
         .fgs-checkbox-container {
@@ -605,15 +593,25 @@ function generateThemedCSS(theme) {
             transform: translateY(-1px); 
         }
         
-        .fgs-btn-secondary { 
-            background: ${theme.buttonSecondary}; 
-            color: #0a2540; 
+        .fgs-btn-secondary {
+            background: ${theme.buttonSecondary};
+            color: ${isLightTheme ? '#0a2540' : '#ffffff'};
             font-weight: 600;
         }
-        
-        .fgs-btn-secondary:hover { 
-            opacity: 0.8; 
-            transform: translateY(-1px); 
+
+        .fgs-btn-secondary:hover {
+            opacity: 0.8;
+            transform: translateY(-1px);
+        }
+
+        /* Reset All button - white washed */
+        #fgs-reset {
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.15)'};
+            color: ${isLightTheme ? '#0a2540' : '#ffffff'};
+        }
+        #fgs-reset:hover {
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.14)' : 'rgba(255, 255, 255, 0.25)'};
+            opacity: 1;
         }
         
         .fgs-undo-redo-container { 
@@ -674,23 +672,23 @@ function generateThemedCSS(theme) {
         }
         
         .fgs-gpa-back, .fgs-gpa-back-to-classes {
-            background: rgba(255, 255, 255, 0.95);
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.95)'};
             color: #0a2540;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid ${isLightTheme ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.3)'};
             padding: 5px 8px;
             border-radius: 4px;
             font-size: 11px;
             cursor: pointer;
             font-weight: 600;
         }
-        
+
         .fgs-gpa-back:hover, .fgs-gpa-back-to-classes:hover {
-            background: rgba(255, 255, 255, 1);
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 1)'};
             transform: translateY(-1px);
         }
         
         .fgs-gpa-step-indicator {
-            color: ${theme.textColor === '#000000' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)'};
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)'};
             font-size: 11px;
             font-weight: 500;
         }
@@ -700,6 +698,166 @@ function generateThemedCSS(theme) {
             margin: 0 0 12px 0;
             font-size: 16px;
             text-align: center;
+        }
+
+        .fgs-gpa-subheading {
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)'};
+            font-size: 12px;
+            line-height: 1.4;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        /* Semester Selector Dropdown */
+        .fgs-gpa-semester-selector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: ${isLightTheme ? 'rgba(0, 102, 204, 0.08)' : 'rgba(52, 144, 220, 0.15)'};
+            border: 1px solid ${isLightTheme ? 'rgba(0, 102, 204, 0.2)' : 'rgba(52, 144, 220, 0.3)'};
+            border-radius: 6px;
+        }
+
+        .fgs-gpa-semester-selector label {
+            color: ${theme.textColor};
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .fgs-gpa-semester-dropdown {
+            background: ${gradeSelectBackground};
+            color: ${gradeSelectColor};
+            border: 1px solid ${gradeSelectBorder};
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            min-width: 160px;
+        }
+
+        .fgs-gpa-semester-dropdown:hover {
+            border-color: ${gradeSelectHoverBorder};
+        }
+
+        .fgs-gpa-semester-dropdown:focus {
+            outline: none;
+            border-color: ${theme.buttonPrimary};
+            box-shadow: 0 0 0 2px ${theme.buttonPrimary}33;
+        }
+
+        /* Semester-specific manual modal fields */
+        .fgs-manual-sem1-fields,
+        .fgs-manual-sem2-fields {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Credits selector row */
+        .fgs-gpa-credits-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding: 6px 10px;
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.05)'};
+            border-radius: 4px;
+        }
+
+        .fgs-gpa-credits-label {
+            color: ${theme.textColor};
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .fgs-gpa-credits-select {
+            background: ${gradeSelectBackground};
+            color: ${gradeSelectColor};
+            border: 1px solid ${gradeSelectBorder};
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            min-width: 60px;
+        }
+
+        .fgs-gpa-credits-select:hover {
+            border-color: ${gradeSelectHoverBorder};
+        }
+
+        .fgs-gpa-credits-select:focus {
+            outline: none;
+            border-color: ${theme.buttonPrimary};
+            box-shadow: 0 0 0 2px ${theme.buttonPrimary}33;
+        }
+
+        /* Class warning message */
+        .fgs-gpa-class-warning {
+            background: rgba(255, 193, 7, 0.15);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 4px;
+            padding: 6px 10px;
+            margin-bottom: 8px;
+            font-size: 10px;
+            color: ${isLightTheme ? '#856404' : '#ffc107'};
+            font-weight: 500;
+        }
+
+        /* Full year warning banner */
+        .fgs-gpa-full-year-warning {
+            background: rgba(255, 193, 7, 0.12);
+            border: 1px solid rgba(255, 193, 7, 0.35);
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+        }
+
+        .fgs-gpa-full-year-warning p {
+            color: ${isLightTheme ? '#856404' : '#ffc107'};
+            font-size: 11px;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .fgs-gpa-full-year-warning p strong {
+            color: ${isLightTheme ? '#6c5ce7' : '#ffc107'};
+        }
+
+        /* Double-count warning */
+        .fgs-gpa-double-count-warning {
+            background: rgba(220, 53, 69, 0.12);
+            border: 1px solid rgba(220, 53, 69, 0.35);
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+        }
+
+        .fgs-gpa-double-count-warning p {
+            color: ${isLightTheme ? '#721c24' : '#f8d7da'};
+            font-size: 11px;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        /* S1 in S2 warning (calculating S1 when already in S2) */
+        .fgs-gpa-s1-in-s2-warning {
+            background: rgba(255, 152, 0, 0.12);
+            border: 1px solid rgba(255, 152, 0, 0.4);
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+        }
+
+        .fgs-gpa-s1-in-s2-warning p {
+            color: ${isLightTheme ? '#e65100' : '#ffcc80'};
+            font-size: 11px;
+            line-height: 1.4;
+            margin: 0;
         }
         
         .fgs-gpa-class-list {
@@ -853,9 +1011,9 @@ function generateThemedCSS(theme) {
         }
         
         .fgs-gpa-type-select {
-            background: #000000 !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            background: ${gradeSelectBackground};
+            color: ${gradeSelectColor};
+            border: 1px solid ${gradeSelectBorder};
             border-radius: 4px;
             padding: 4px 6px;
             font-size: 11px;
@@ -909,15 +1067,25 @@ function generateThemedCSS(theme) {
             margin-bottom: 10px;
             width: 100%;
         }
+
+        .fgs-gpa-grade-row.full-year-mode {
+            gap: 4px;
+            margin-bottom: 8px;
+        }
         
         .fgs-gpa-grade-box {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 2px;
             min-width: 0;
         }
-        
+
+        /* Compact grade boxes for full year mode (6 columns) */
+        .fgs-gpa-grade-row.full-year-mode .fgs-gpa-grade-box {
+            gap: 1px;
+        }
+
         .fgs-gpa-grade-label {
             color: ${theme.textColor};
             font-size: 10px;
@@ -925,10 +1093,15 @@ function generateThemedCSS(theme) {
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
-        
+
+        .fgs-gpa-grade-row.full-year-mode .fgs-gpa-grade-label {
+            font-size: 9px;
+            letter-spacing: 0;
+        }
+
         .fgs-gpa-grade-select {
-            background: ${gradeSelectBackground};
-            color: ${gradeSelectColor};
+            background: ${gradeSelectBackground} !important;
+            color: ${gradeSelectColor} !important;
             border: 1px solid ${gradeSelectBorder};
             border-radius: 4px;
             padding: 5px 4px;
@@ -937,6 +1110,16 @@ function generateThemedCSS(theme) {
             cursor: pointer;
             width: 100%;
             box-sizing: border-box;
+        }
+
+        .fgs-gpa-grade-select option {
+            background: ${isLightTheme ? '#ffffff' : '#1a1a2e'};
+            color: ${isLightTheme ? '#0a2540' : '#ffffff'};
+        }
+
+        .fgs-gpa-grade-row.full-year-mode .fgs-gpa-grade-select {
+            padding: 4px 2px;
+            font-size: 11px;
         }
         
         .fgs-gpa-grade-select:hover {
@@ -962,18 +1145,10 @@ function generateThemedCSS(theme) {
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        
-        .fgs-gpa-grade-edit {
-            background: rgba(255, 255, 255, 0.95);
-            color: #0a2540;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 3px 6px;
-            border-radius: 3px;
-            font-size: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            min-width: 50px;
-            margin-left: 6px;
+
+        .fgs-gpa-grade-row.full-year-mode .fgs-gpa-grade-hint {
+            font-size: 8px;
+            display: none; /* Hide hints in full year mode to save space */
         }
         
         .fgs-gpa-semester-result {
@@ -1054,11 +1229,6 @@ function generateThemedCSS(theme) {
             flex: 1;
         }
         
-        .fgs-gpa-grade-edit:hover {
-            background: rgba(255, 255, 255, 1);
-            transform: scale(1.05);
-        }
-        
         @media (max-width: 480px) {
             .fgs-gpa-grade-row {
                 gap: 5px;
@@ -1077,15 +1247,7 @@ function generateThemedCSS(theme) {
                 font-size: 9px;
             }
         }
-        
 
-        
-        
-        
-        
-        
-        
-        
         .fgs-gpa-help, .fgs-gpa-help-results {
             background: rgba(52, 144, 220, 0.8);
             color: white;
@@ -1166,14 +1328,14 @@ function generateThemedCSS(theme) {
         }
         
         .fgs-gpa-result-note {
-            color: ${theme.textColor === '#000000' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.75)'};
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.75)'};
             font-size: 10px;
             margin: 4px 0 8px 0;
             text-align: right;
         }
-        
+
         .fgs-gpa-summary {
-            color: ${theme.textColor === '#000000' ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255, 255, 255, 0.7)'};
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255, 255, 255, 0.7)'};
             font-size: 11px;
             margin-bottom: 8px;
         }
@@ -1275,7 +1437,7 @@ function generateThemedCSS(theme) {
         }
         
         .fgs-gpa-info p {
-            color: ${theme.textColor === '#000000' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)'};
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)'};
             margin: 2px 0;
             font-size: 11px;
             line-height: 1.3;
@@ -1312,27 +1474,6 @@ function generateThemedCSS(theme) {
             font-size: 12px;
             line-height: 1.4;
             font-weight: 500;
-        }
-        
-        .fgs-warning {
-            background: ${warningBackground};
-            border: ${warningBorder};
-            border-radius: 6px;
-            padding: 12px;
-            margin: 8px 0;
-        }
-        
-        .fgs-warning h4 {
-            color: ${warningHeadingColor};
-            font-size: 13px;
-            margin: 0 0 6px 0;
-        }
-        
-        .fgs-warning p {
-            color: ${warningTextColor};
-            font-size: 11px;
-            line-height: 1.4;
-            margin: 4px 0;
         }
         
         /* FEEDBACK BOX - Always visible at bottom */
@@ -1397,12 +1538,13 @@ function generateThemedCSS(theme) {
             line-height: 1.3;
             margin-bottom: 8px;
             resize: vertical;
+            max-height: 150px;
             box-sizing: border-box;
             transition: all 0.2s;
         }
         
         .fgs-feedback-textarea::placeholder {
-            color: ${theme.textColor === '#000000' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)'};
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)'};
         }
         
         .fgs-feedback-textarea:focus {
@@ -1473,7 +1615,7 @@ function generateThemedCSS(theme) {
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 2147483647;
+            z-index: 999999;
             padding: 24px;
         }
 
@@ -1615,14 +1757,9 @@ function generateThemedCSS(theme) {
             color: white;
         }
 
-        .fgs-badge-updated {
-            background: #17a2b8;
+        .fgs-badge-fixed {
+            background: #dc3545;
             color: white;
-        }
-
-        .fgs-badge-improved {
-            background: #ffc107;
-            color: #1b2735;
         }
 
         .fgs-feature-icon {
@@ -1646,37 +1783,6 @@ function generateThemedCSS(theme) {
             margin: 0 0 16px 0;
             text-align: center;
             flex: 1;
-        }
-
-        /* Feature Media (placeholder for videos/images) */
-        .fgs-feature-media {
-            margin: 16px 0;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        .fgs-feature-placeholder {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px dashed rgba(255, 255, 255, 0.3);
-            padding: 40px 20px;
-            text-align: center;
-            border-radius: 6px;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 13px;
-        }
-
-        .fgs-feature-video {
-            width: 100%;
-            max-height: 250px;
-            border-radius: 6px;
-            background: #000;
-        }
-
-        .fgs-feature-image {
-            width: 100%;
-            max-height: 250px;
-            object-fit: cover;
-            border-radius: 6px;
         }
 
         /* Feature Tags */
@@ -1809,7 +1915,7 @@ function generateThemedCSS(theme) {
         }
 
         .fgs-manual-input::placeholder {
-            color: ${theme.textColor === '#000000' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)'};
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)'};
         }
 
         .fgs-manual-input:focus, .fgs-manual-select:focus, .fgs-manual-grade-select:focus {
@@ -1845,7 +1951,7 @@ function generateThemedCSS(theme) {
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 2147483647;
+            z-index: 999999;
             padding: 24px;
         }
 
@@ -1900,11 +2006,37 @@ function generateThemedCSS(theme) {
 
         .fgs-tutorial-video {
             width: 100%;
-            height: 360px;
+            height: auto;
             max-height: 60vh;
             border-radius: 8px;
             background: #000;
-            object-fit: cover;
+            object-fit: contain;
+        }
+
+        /* Focus-visible states for keyboard navigation */
+        #focus-grade-simulator-popup button:focus-visible,
+        #focus-grade-simulator-popup select:focus-visible,
+        #focus-grade-simulator-popup input:focus-visible,
+        #focus-grade-simulator-popup textarea:focus-visible {
+            outline: 2px solid ${theme.buttonPrimary};
+            outline-offset: 2px;
+        }
+
+
+        /* Safety max-width for popup on smaller viewports */
+        #focus-grade-simulator-popup {
+            max-width: calc(100vw - 20px);
+        }
+
+        /* Respect reduced motion preference */
+        @media (prefers-reduced-motion: reduce) {
+            #focus-grade-simulator-popup,
+            #focus-grade-simulator-popup *,
+            #focus-grade-simulator-popup *::before,
+            #focus-grade-simulator-popup *::after {
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
+            }
         }
     `
 }

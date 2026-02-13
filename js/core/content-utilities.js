@@ -25,17 +25,14 @@ let originalRowsByClass = {};
 let mode = "unweighted";
 let currentClassId = null;
 let redoHistory = [];
+let actionHistory = [];     // Unified chronological history: { type: 'hypothetical'|'scoreEdit', classKey, timestamp }
+let actionRedoHistory = []; // Unified redo history
 let floatingPopup = null;
 let helpModal = null;
-let isDragging = !1;
-let dragOffset = { x: 0, y: 0 };
+let isDragging = false;
 let nextRowColor = "#FFFFFF";
 let originalCategoryData = {};
-let isInitialized = !1;
-
-// Theme system globals
-let defaultWebsiteColor = null; // Stores user's default website color
-let hasAutoApplied = false; // Prevents multiple auto-applications
+let isInitialized = false;
 
 // Class monitoring globals
 let classChangeObserver = null;
@@ -53,9 +50,8 @@ function detectClassType() {
         
         if (weightedContainer && weightedTable) {
             return "weighted";
-        } else {
-            return "unweighted";
         }
+        return "unweighted";
     } catch (error) {
         return "unweighted"; // Default fallback
     }
@@ -148,14 +144,6 @@ function handleClassChange() {
                 // Use the global showModeSelection function
                 if (typeof window.showModeSelection === 'function') {
                     window.showModeSelection();
-                } else {
-                    const modeSelection = document.getElementById("fgs-mode-selection");
-                    const calculatorForm = document.getElementById("fgs-calculator-form");
-                    const gpaCalculator = document.getElementById("fgs-gpa-calculator");
-                    
-                    if (modeSelection) modeSelection.style.display = "flex";
-                    if (calculatorForm) calculatorForm.style.display = "none";
-                    if (gpaCalculator) gpaCalculator.style.display = "none";
                 }
             }
             
@@ -293,7 +281,7 @@ function getDateTime() {
         try {
                 const now = new Date();
                 now.setMinutes(now.getMinutes() - Math.floor(Math.random() * 60));
-                return now.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }) + " " + now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: !0 }).toLowerCase();
+                return now.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }) + " " + now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }).toLowerCase();
         } catch (error) {
                 return "Recent";
         }

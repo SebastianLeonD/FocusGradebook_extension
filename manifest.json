@@ -1,13 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Focus Grade Calculator",
-  "version": "1.6.3",
+  "version": "1.7.0",
   "description": "Secure floating grade calculator for Focus gradebook with enhanced privacy protection.",
   "permissions": [
     "activeTab"
   ],
   "host_permissions": [
-    "https://focus.schooldomain.com/*",
     "https://*.focusschoolsoftware.com/*"
   ],
   "action": {
@@ -54,7 +53,7 @@
         "popup/Feature-preview.mp4"
       ],
       "matches": [
-        "<all_urls>"
+        "https://*.focusschoolsoftware.com/*"
       ]
     }
   ]

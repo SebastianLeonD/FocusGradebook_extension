@@ -2,7 +2,7 @@
  * HELP MODAL CSS STYLES
  * Contains all styling for the comprehensive help guide modal
  * Includes responsive design, overlay effects, and mobile-friendly layouts
- * FIXED: Added styles for new personal contact section
+ * Added styles for new personal contact section
  */
 
 function getHelpModalCSS() {
@@ -173,49 +173,6 @@ function getHelpModalCSS() {
                     border-left: 4px solid #ffd700;
                 }
                 
-                .fgs-help-example {
-                    background: rgba(0, 0, 0, 0.2);
-                    border-radius: 6px;
-                    padding: 12px;
-                    margin: 10px 0;
-                    font-family: 'Courier New', monospace;
-                    font-size: 14px;
-                }
-                
-                .fgs-help-example code {
-                    background: rgba(255, 255, 255, 0.2);
-                    padding: 2px 6px;
-                    border-radius: 3px;
-                    font-weight: bold;
-                    color: #87ceeb;
-                }
-                
-                .fgs-example-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                    gap: 15px;
-                    margin: 15px 0;
-                }
-                
-                .fgs-example-item {
-                    background: rgba(255, 255, 255, 0.1);
-                    padding: 15px;
-                    border-radius: 8px;
-                    text-align: center;
-                    font-size: 14px;
-                    line-height: 1.4;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                }
-                
-                .fgs-help-controls p {
-                    margin: 8px 0;
-                    padding: 8px 12px;
-                    background: rgba(255, 255, 255, 0.08);
-                    border-radius: 6px;
-                    font-size: 14px;
-                    line-height: 1.4;
-                }
-                
                 /* CONTACT SECTION STYLES */
                 .fgs-help-contact {
                     background: rgba(40, 167, 69, 0.1);
@@ -270,10 +227,6 @@ function getHelpModalCSS() {
                     
                     .fgs-help-section {
                         padding: 15px;
-                    }
-                    
-                    .fgs-example-grid {
-                        grid-template-columns: 1fr;
                     }
                     
                     .fgs-help-step {

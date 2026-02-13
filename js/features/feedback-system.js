@@ -2,8 +2,8 @@
  * FEEDBACK-SYSTEM.JS
  * Handles ANONYMOUS user feedback collection and email sending for Focus Grade Calculator
  * PRODUCTION VERSION: Removed console logs
- * Uses Web3Forms API with access key: 4a01005a-93cd-4a05-83fd-7a972d602c15
- * FIXED: Removed auto-initialization to prevent feedback box from opening automatically
+ * Uses Web3Forms API for anonymous feedback delivery
+ * Removed auto-initialization to prevent feedback box from opening automatically
  */
 
 /**
@@ -22,7 +22,7 @@ function setupFeedbackSystem() {
 /**
  * Sets up feedback form event listeners for the bottom feedback box
  */
-function setupFeedbackEvents() {
+function setupFeedbackEvents(retries = 0) {
     try {
         const sendButton = document.getElementById('fgs-send-feedback');
         const textarea = document.getElementById('fgs-feedback-text');
@@ -31,7 +31,7 @@ function setupFeedbackEvents() {
         const feedbackHeader = document.querySelector('.fgs-feedback-header');
         
         if (!sendButton || !textarea) {
-            setTimeout(setupFeedbackEvents, 1000);
+            if (retries < 5) setTimeout(() => setupFeedbackEvents(retries + 1), 1000);
             return;
         }
         
@@ -41,7 +41,7 @@ function setupFeedbackEvents() {
         }
         sendButton.setAttribute('data-feedback-setup', 'true');
         
-        // FIXED: Always start with feedback box collapsed when popup opens
+        // Always start with feedback box collapsed when popup opens
         if (feedbackContent && toggleButton) {
             feedbackContent.classList.add('collapsed');
             toggleButton.textContent = '+';
@@ -171,8 +171,7 @@ function showFeedbackStatus(type, message) {
 }
 
 /**
- * Send via Web3Forms - Your Access Key: 4a01005a-93cd-4a05-83fd-7a972d602c15
- * This is completely automated - user just types and clicks send!
+ * Send via Web3Forms - completely automated, user just types and clicks send!
  */
 function sendViaWeb3Forms(feedbackText) {
     return new Promise((resolve, reject) => {
@@ -188,7 +187,7 @@ function sendViaWeb3Forms(feedbackText) {
             
             // Additional useful info
             formData.append('timestamp', new Date().toISOString());
-            formData.append('extension_version', '1.6.3');
+            formData.append('extension_version', '1.7.0');
             formData.append('page_url', window.location.href);
             formData.append('user_agent', navigator.userAgent);
             
@@ -217,7 +216,7 @@ function sendViaWeb3Forms(feedbackText) {
     });
 }
 
-// FIXED: Removed all auto-initialization calls to prevent feedback box from opening automatically
+// Removed all auto-initialization calls to prevent feedback box from opening automatically
 // The feedback system will only initialize when the popup is actually created
 
 /**
@@ -265,46 +264,41 @@ function openNewFeaturesModal() {
                         <div class="fgs-feature-badge-container">
                             <span class="fgs-feature-badge fgs-badge-new">NEW</span>
                         </div>
-                        <div class="fgs-feature-icon">📝</div>
-                        <h3 class="fgs-feature-title">Letter Grade Editing</h3>
-                        <p class="fgs-feature-description">Click on any letter grade to edit it directly! Change grades to A+, B-, C+, or any letter, and watch points and percentages update automatically. Everything stays in sync.</p>
-                        <div class="fgs-feature-media">
-                            <video class="fgs-feature-video" controls width="100%" id="fgs-feature-video">
-                                Your browser doesn't support HTML5 video.
-                            </video>
-                        </div>
+                        <div class="fgs-feature-icon">📆</div>
+                        <h3 class="fgs-feature-title">Semester 2 & Full Year GPA</h3>
+                        <p class="fgs-feature-description">The GPA Calculator now supports Semester 2 (Q3, Q4, S2 Exam) and Full Year mode. Switch between Semester 1, Semester 2, or Full Year from the dropdown to project your GPA across any time period.</p>
                         <div class="fgs-feature-tags">
-                            <span class="fgs-feature-tag">Click to edit</span>
-                            <span class="fgs-feature-tag">Auto-sync</span>
-                            <span class="fgs-feature-tag">Reset anytime</span>
+                            <span class="fgs-feature-tag">Semester 2</span>
+                            <span class="fgs-feature-tag">Full Year</span>
+                            <span class="fgs-feature-tag">BCPS Formula</span>
                         </div>
                     </div>
 
                     <!-- SECONDARY FEATURE - Bottom left 25% -->
                     <div class="fgs-feature-card fgs-feature-secondary">
                         <div class="fgs-feature-badge-container">
-                            <span class="fgs-feature-badge fgs-badge-new">NEW</span>
+                            <span class="fgs-feature-badge fgs-badge-fixed">FIXED</span>
                         </div>
-                        <div class="fgs-feature-icon">🎨</div>
-                        <h3 class="fgs-feature-title">9 Themes</h3>
-                        <p class="fgs-feature-description">Choose from 9 gorgeous color themes! Your theme saves automatically.</p>
+                        <div class="fgs-feature-icon">🐛</div>
+                        <h3 class="fgs-feature-title">Z Grade Bug Fix</h3>
+                        <p class="fgs-feature-description">Fixed a bug where editing a Z (zero) grade would cause wildly incorrect hypothetical grades. Z grades now calculate correctly.</p>
                         <div class="fgs-feature-tags">
-                            <span class="fgs-feature-tag">9 options</span>
-                            <span class="fgs-feature-tag">Auto-save</span>
+                            <span class="fgs-feature-tag">Grade calc fix</span>
+                            <span class="fgs-feature-tag">Accurate %</span>
                         </div>
                     </div>
 
                     <!-- SECONDARY FEATURE - Bottom right 25% -->
                     <div class="fgs-feature-card fgs-feature-secondary">
                         <div class="fgs-feature-badge-container">
-                            <span class="fgs-feature-badge fgs-badge-updated">UPDATED</span>
+                            <span class="fgs-feature-badge fgs-badge-new">NEW</span>
                         </div>
-                        <div class="fgs-feature-icon">↺</div>
-                        <h3 class="fgs-feature-title">Undo/Redo</h3>
-                        <p class="fgs-feature-description">Made a mistake? Undo and redo your edits with a single click. Perfect for experimenting!</p>
+                        <div class="fgs-feature-icon">📝</div>
+                        <h3 class="fgs-feature-title">Letter Grade Editing</h3>
+                        <p class="fgs-feature-description">Click any letter grade to edit it directly. Points and percentages update automatically and stay in sync.</p>
                         <div class="fgs-feature-tags">
-                            <span class="fgs-feature-tag">Full history</span>
-                            <span class="fgs-feature-tag">Easy recovery</span>
+                            <span class="fgs-feature-tag">Click to edit</span>
+                            <span class="fgs-feature-tag">Auto-sync</span>
                         </div>
                     </div>
 
@@ -314,18 +308,6 @@ function openNewFeaturesModal() {
 
         backdrop.appendChild(modal);
         document.body.appendChild(backdrop);
-
-        // Set video source using chrome.runtime.getURL for proper loading
-        const videoElement = modal.querySelector('#fgs-feature-video');
-        if (videoElement) {
-            const videoUrl = typeof chrome !== 'undefined' && chrome.runtime 
-                ? chrome.runtime.getURL('popup/Feature-preview.mp4')
-                : 'popup/Feature-preview.mp4';
-            const source = document.createElement('source');
-            source.src = videoUrl;
-            source.type = 'video/mp4';
-            videoElement.appendChild(source);
-        }
 
         const closeBtn = modal.querySelector('.fgs-new-features-close');
 
@@ -350,13 +332,10 @@ function openNewFeaturesModal() {
         if (closeBtn) closeBtn.addEventListener('click', closeHandler);
 
     } catch (error) {
-        console.warn('⚠️ New features modal failed', error);
+        console.error('New features modal failed', error);
     }
 }
 
 // Make functions globally available
 window.setupFeedbackSystem = setupFeedbackSystem;
-window.handleSendFeedback = handleSendFeedback;
-window.toggleFeedbackBox = toggleFeedbackBox;
 window.setupNewFeaturesSection = setupNewFeaturesSection;
-window.openNewFeaturesModal = openNewFeaturesModal;
