@@ -1422,7 +1422,7 @@ function validateGPAGradeInputs(showAlert = true) {
                 } else {
                     gradeLabels = 'Q1, Q2, and Exam';
                 }
-                alert('Please enter ' + gradeLabels + ' grades for: ' + missingClasses.join(', ') + '.');
+                showToast('Please enter ' + gradeLabels + ' grades for: ' + missingClasses.join(', ') + '.', 'warning');
             }
 
             const firstMissing = missing[0];

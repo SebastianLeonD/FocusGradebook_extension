@@ -121,8 +121,6 @@
                 setTimeout(() => {
                         if (typeof makeScoresEditable === 'function') {
                         makeScoresEditable();
-                        } else {
-                        console.error("makeScoresEditable function not found!");
                         }
                 }, 300); // Reduced from 500ms to 300ms
 
@@ -363,7 +361,6 @@
 
                                                 isPopupInitializing = false;
                                         } else {
-                                                console.error("Popup creation failed");
                                                 isPopupInitializing = false;
                                         }
                                 }, 150); // Increased timeout for better reliability

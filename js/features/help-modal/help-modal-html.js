@@ -118,7 +118,7 @@ function getHelpModalHTML() {
                                     </div>
                                     <p style="margin-top: 12px;"><strong>Please include:</strong> a screenshot, your district/school, the Focus page, and steps to reproduce.</p>
                                     <div class="fgs-help-tip" style="margin-top: 12px;">
-                                        💬 Current release: <strong>v1.7.0</strong>. I usually reply in the evenings—thanks for helping improve the extension!
+                                        💬 Current release: <strong>v${chrome.runtime.getManifest().version}</strong>. I usually reply in the evenings—thanks for helping improve the extension!
                                     </div>
                                 </div>
                             </div>

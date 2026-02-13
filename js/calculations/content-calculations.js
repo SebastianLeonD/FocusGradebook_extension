@@ -43,6 +43,35 @@ function nearlyEqual(a, b, epsilon = SCORE_COMPARE_EPSILON) {
     return Math.abs(na - nb) <= epsilon;
 }
 
+function showToast(message, type = 'error') {
+    const colors = { error: '#e74c3c', warning: '#f39c12', info: '#3498db' };
+    const accent = colors[type] || colors.error;
+    const container = document.getElementById('fgs-toast-container') || (() => {
+        const c = document.createElement('div');
+        c.id = 'fgs-toast-container';
+        c.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:2147483647;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;';
+        document.body.appendChild(c);
+        return c;
+    })();
+    const toast = document.createElement('div');
+    toast.className = 'fgs-toast-item';
+    toast.style.cssText = `pointer-events:auto;background:#1e1e2e;color:#f0f0f0;padding:10px 36px 10px 14px;border-radius:6px;border-left:4px solid ${accent};font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;max-width:380px;box-shadow:0 4px 12px rgba(0,0,0,0.3);opacity:0;transform:translateY(-8px);transition:opacity 0.3s,transform 0.3s;position:relative;`;
+    toast.textContent = message;
+    const close = document.createElement('span');
+    close.textContent = '\u00d7';
+    close.style.cssText = 'position:absolute;top:6px;right:10px;cursor:pointer;font-size:16px;color:#999;line-height:1;';
+    close.addEventListener('click', () => dismiss());
+    toast.appendChild(close);
+    container.appendChild(toast);
+    requestAnimationFrame(() => { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; });
+    const dismiss = () => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-8px)';
+        setTimeout(() => toast.remove(), 300);
+    };
+    setTimeout(dismiss, 4000);
+}
+
 function getEditorCellCSS(height) {
     return `padding: 4px 8px; text-align: left; vertical-align: middle; height: ${height}px; max-height: ${height}px; overflow: visible; box-sizing: border-box;`;
 }
@@ -74,7 +103,7 @@ function hasActiveScoreEditsForClass(classKey) {
             return false;
         });
     } catch (error) {
-        console.error("Error checking score edits:", error);
+        /* silent */
         return false;
     }
 }
@@ -164,7 +193,7 @@ function parseScoreCell(row, scoreCell) {
         snapshot.wasExcluded = snapshot.wasExcluded || !totalIsValid;
         return snapshot;
     } catch (error) {
-        console.error("parseScoreCell - Error extracting score data:", error);
+        /* silent */
         return {
             html: scoreCell.innerHTML,
             text: scoreCell.textContent.trim(),
@@ -184,7 +213,7 @@ function captureOriginalScoreSnapshot(row, scoreCell, rowId) {
         originalScoreSnapshots[rowId] = snapshot;
         return snapshot;
     } catch (error) {
-        console.error("captureOriginalScoreSnapshot - Error:", error);
+        /* silent */
         return null;
     }
 }
@@ -240,7 +269,7 @@ function handleAdd() {
             category = categoryInput.value.trim();
         }
         if (!earned || !total || (isWeighted && !category)) {
-            alert("Please fill out all required fields.");
+            showToast("Please fill out all required fields.", "warning");
             return;
         }
         
@@ -365,9 +394,7 @@ function calculate() {
                         }
                     }
                 }
-            } catch (error) {
-                console.error("Error parsing category at index", i, error);
-            }
+            } catch (error) { /* skip category */ }
         }
         
         
@@ -391,9 +418,7 @@ function calculate() {
                     }
                     categoryMap[category].hasHypotheticals = true;
                 }
-            } catch (error) {
-                console.error("Error processing hypothetical assignment row:", error);
-            }
+            } catch (error) { /* skip hypothetical */ }
         });
         
         // Apply modified scores with proper logic for each case
@@ -433,9 +458,7 @@ function calculate() {
                 categoryData.hasHypotheticals = true;
 
 
-            } catch (error) {
-                console.error("Error processing score modification:", error);
-            }
+            } catch (error) { /* skip modification */ }
         });
         
         
@@ -451,9 +474,7 @@ function calculate() {
                     usedWeightSum += weight;
                     
                 }
-            } catch (error) {
-                console.error("Error calculating category:", cat, error);
-            }
+            } catch (error) { /* skip category */ }
         }
         
         const finalPercent = usedWeightSum > 0 
@@ -524,13 +545,9 @@ function calculate() {
         }
     }
 }
-                        } catch (error) {
-                                console.error("Error updating cell at index", i, error);
-                        }
+                        } catch (error) { /* skip cell */ }
                 }
-        } catch (error) {
-                console.error("Error in updateCategoryCells:", error);
-        }
+        } catch (error) { /* silent */ }
     }
     
     /**
@@ -586,9 +603,7 @@ function calculate() {
                         totalEarned += earned;
                     }
                 }
-            } catch (error) {
-                console.error("Error processing unweighted row:", error);
-            }
+            } catch (error) { /* skip row */ }
         });
         
         
@@ -609,9 +624,7 @@ function calculate() {
                 }
 
 
-            } catch (error) {
-                console.error("Error applying edited row contribution:", error);
-            }
+            } catch (error) { /* skip contribution */ }
         });
         
         // Prevent negative values
@@ -650,9 +663,7 @@ function calculate() {
                                 if (text.includes("percent of grade")) percentRow = row;
                                 else if (text.includes("score")) scoreRow = row;
                                 else if (!headerRow) headerRow = row;
-                        } catch (error) {
-                                console.error("Error processing table row:", error);
-                        }
+                        } catch (error) { /* skip row */ }
                 }
                 if (headerRow && percentRow && scoreRow) {
                         try {
@@ -667,12 +678,10 @@ function calculate() {
                                 addCell(headerRow, "Hypothetical Grade");
                                 addCell(percentRow, "");
                                 addCell(scoreRow, `${percent}% ${letter}`, true);
-                        } catch (error) {
-                                console.error("Error adding cells to table:", error);
-                        }
+                        } catch (error) { /* skip */ }
                 }
         } catch (error) {
-                console.error("Error in showWeightedGrade:", error);
+                /* silent */
         }
     }
     
@@ -695,7 +704,7 @@ function calculate() {
                         container.appendChild(span);
                 }
         } catch (error) {
-                console.error("Error in showGrade:", error);
+                /* silent */
         }
     }
     
@@ -713,7 +722,6 @@ function addRow(data) {
                 const table = document.querySelector(".grades-grid.dataTable tbody");
                 const baseRow = table?.querySelector("tr");
                 if (!table || !baseRow) {
-                        console.error("ADD ROW OPERATION - Table or base row not found");
                         return;
                 }
                 const clone = baseRow.cloneNode(true);
@@ -876,7 +884,6 @@ function deleteSpecificAssignment(rowId) {
                 // Find the row element
                 const rowElement = document.querySelector(`[data-fgs-row-id="${rowId}"]`);
                 if (!rowElement) {
-                        console.error("DELETE SPECIFIC - Row element not found");
                         return;
                 }
                 
@@ -899,7 +906,6 @@ function deleteSpecificAssignment(rowId) {
                         const scoreCell = rowElement.querySelector("td:nth-child(3)");
                         
                         if (!scoreCell) {
-                                console.error("DELETE SPECIFIC - Could not find score cell");
                                 return;
                         }
                         
@@ -944,7 +950,6 @@ function deleteSpecificAssignment(rowId) {
                 
                 // If we still don't have the data, we can't proceed
                 if (earned === null || total === null) {
-                        console.error("DELETE SPECIFIC - Could not extract score data");
                         
                         // BUT - we can still try to delete by just removing the most recent hypothetical
                         const classKey = getCurrentClassKey();
@@ -1006,7 +1011,7 @@ function deleteSpecificAssignment(rowId) {
                                 }
                         }
                         
-                        alert("Unable to delete this assignment. Please try using Reset All instead.");
+                        showToast("Unable to delete this assignment. Please try using Reset All instead.", "warning");
                         return;
                 }
                 
@@ -1049,7 +1054,6 @@ function deleteSpecificAssignment(rowId) {
                 }
 
                 if (assignmentIndex === -1) {
-                        console.error("DELETE SPECIFIC - Assignment not found in hypotheticals array after fallbacks");
                         return;
                 }
                 
@@ -1121,9 +1125,7 @@ function deleteSpecificAssignment(rowId) {
                                         
                                         row.style.backgroundColor = newColor;
                                         
-                                } catch (error) {
-                                        console.error("DELETE SPECIFIC - Error flipping color for row:", error);
-                                }
+                                } catch (error) { /* skip row */ }
                         });
                         
                         // Recalculate grades
@@ -1441,7 +1443,7 @@ function openScoreEditor(cell, rowId, row) {
                 
                 const parsedTotal = parseFloat(userTotal);
                 if (isNaN(parsedTotal) || parsedTotal <= 0) {
-                    alert("Invalid point value. Please enter a number greater than 0.");
+                    showToast("Invalid point value. Please enter a number greater than 0.", "error");
                     return;
                 }
                 
@@ -1449,18 +1451,7 @@ function openScoreEditor(cell, rowId, row) {
             }
             
             if (originalEarned === null || totalPoints === null) {
-                console.error("Could not parse score from snapshot/text");
-                console.error("Cell HTML:", cell.innerHTML);
-                console.error("Row HTML:", row.innerHTML);
-                
-                alert(
-                    "Unable to parse score format.\n\n" +
-                    "Found text: '" + (baseSnapshot?.text || currentText) + "'\n\n" +
-                    "Please report this to the developer with:\n" +
-                    "1. This screenshot\n" +
-                    "2. The course name\n" +
-                    "3. The assignment name you clicked on"
-                );
+                showToast("This assignment uses a special scoring format and cannot be edited directly.", "info");
                 return;
             }
             
@@ -1559,7 +1550,7 @@ function openScoreEditor(cell, rowId, row) {
 
     } catch (error) {
         console.error("SCORE EDIT - Error:", error);
-        alert("Error opening editor: " + error.message);
+        showToast("Error opening editor: " + error.message, "error");
     }
 }
 
@@ -1654,7 +1645,7 @@ function saveScoreEdit(cell, rowId, newEarned, totalPoints) {
                 // For excluded grades, empty string means user wants 0
                 earnedValue = "0";
             } else {
-                alert("Please enter a number for the earned points (or 0 for no points earned)");
+                showToast("Please enter a number for the earned points (or 0 for no points earned).", "error");
                 restoreOriginalScore(cell, rowId);
                 return;
             }
@@ -1665,7 +1656,7 @@ function saveScoreEdit(cell, rowId, newEarned, totalPoints) {
 
         // Explicitly allow 0 as a valid value
         if (isNaN(earnedNum) || earnedNum < 0) {
-            alert("Please enter a valid number (0 or greater)");
+            showToast("Please enter a valid number (0 or greater).", "error");
             restoreOriginalScore(cell, rowId);
             return;
         }
@@ -1920,7 +1911,7 @@ function updatePercentageCell(percentCell, percentValue, rowId) {
         percentCell.appendChild(container);
 
     } catch (error) {
-        console.error("Error updating percentage cell:", error);
+        /* silent */
     }
 }
 
@@ -2027,7 +2018,7 @@ function openPercentageEditor(percentCell, scoreCell, rowId, row) {
 
     } catch (error) {
         console.error("PERCENT EDIT - Error:", error);
-        alert("Error opening percentage editor: " + error.message);
+        showToast("Error opening percentage editor: " + error.message, "error");
     }
 }
 
@@ -2042,7 +2033,7 @@ function savePercentageEdit(percentCell, scoreCell, rowId, percentInput, row) {
         percentValue = parseFloat(percentValue);
 
         if (isNaN(percentValue) || percentValue < 0 || percentValue > 100) {
-            alert("Please enter a valid percentage between 0 and 100");
+            showToast("Please enter a valid percentage between 0 and 100.", "error");
             restoreOriginalPercentage(percentCell, rowId);
             return;
         }
@@ -2063,13 +2054,13 @@ function savePercentageEdit(percentCell, scoreCell, rowId, percentInput, row) {
         }
 
         if (!totalPoints || isNaN(totalPoints)) {
-            alert("Cannot determine total points for this assignment");
+            showToast("Cannot determine total points for this assignment.", "warning");
             restoreOriginalPercentage(percentCell, rowId);
             return;
         }
 
         if (totalPoints === 0) {
-            alert("Cannot edit percentage for an assignment worth 0 points");
+            showToast("Cannot edit percentage for an assignment worth 0 points.", "warning");
             restoreOriginalPercentage(percentCell, rowId);
             return;
         }
@@ -2151,7 +2142,7 @@ function restoreOriginalPercentage(percentCell, rowId) {
             percentCell.style.cssText = "";
         }
     } catch (error) {
-        console.error("Error restoring percentage:", error);
+        /* silent */
     }
 }
 
@@ -2247,7 +2238,7 @@ function openLetterGradeEditor(letterCell, scoreCell, percentCell, rowId, row) {
 
     } catch (error) {
         console.error("LETTER EDIT - Error:", error);
-        alert("Error opening letter grade editor: " + error.message);
+        showToast("Error opening letter grade editor: " + error.message, "error");
     }
 }
 
@@ -2266,7 +2257,7 @@ function saveLetterGradeEdit(letterCell, scoreCell, percentCell, rowId, letterIn
         // Validate letter grade format (A, A+, A-, B, B+, B-, etc.)
         const validGrades = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'F'];
         if (!validGrades.includes(letterValue)) {
-            alert("Please enter a valid letter grade: A, A+, A-, B, B+, B-, C, C+, C-, D, D+, D-, or F");
+            showToast("Please enter a valid letter grade (A, A+, A-, B+, B, B-, C+, C, C-, D+, D, D-, or F).", "error");
             restoreOriginalLetterGrade(letterCell, rowId);
             return;
         }
@@ -2306,13 +2297,13 @@ function saveLetterGradeEdit(letterCell, scoreCell, percentCell, rowId, letterIn
         }
 
         if (!totalPoints || isNaN(totalPoints)) {
-            alert("Cannot determine total points for this assignment");
+            showToast("Cannot determine total points for this assignment.", "warning");
             restoreOriginalLetterGrade(letterCell, rowId);
             return;
         }
 
         if (totalPoints === 0) {
-            alert("Cannot edit letter grade for an assignment worth 0 points");
+            showToast("Cannot edit letter grade for an assignment worth 0 points.", "warning");
             restoreOriginalLetterGrade(letterCell, rowId);
             return;
         }
@@ -2389,7 +2380,7 @@ function updateLetterGradeCell(letterCell, letterValue, rowId) {
         letterCell.appendChild(container);
 
     } catch (error) {
-        console.error("Error updating letter grade cell:", error);
+        /* silent */
     }
 }
 
@@ -2416,7 +2407,7 @@ function restoreOriginalLetterGrade(letterCell, rowId) {
             letterCell.style.cssText = "";
         }
     } catch (error) {
-        console.error("Error restoring letter grade:", error);
+        /* silent */
     }
 }
 
@@ -2448,7 +2439,7 @@ function restoreOriginalScore(cell, rowId) {
         applySnapshotToCell(cell, appliedSnapshot);
 
     } catch (error) {
-        console.error("SCORE EDIT - Error restoring:", error);
+        /* silent */
     }
 }
 
@@ -3040,7 +3031,7 @@ function clearAllScoreEdits() {
                 document.querySelectorAll(".injected-hypo-grade").forEach((e) => e.remove());
                 document.querySelectorAll(".injected-hypo-weighted").forEach((e) => e.remove());
         } catch (error) {
-                console.error("Error clearing displays:", error);
+                /* silent */
         }
     }
     
@@ -3075,12 +3066,10 @@ function clearAllScoreEdits() {
                                                 originalFontSize: computedStyle.fontSize,
                                         };
                                 }
-                        } catch (error) {
-                                console.error("Error saving category data at index", i, error);
-                        }
+                        } catch (error) { /* skip category */ }
                 }
         } catch (error) {
-                console.error("Error in saveOriginalCategoryData:", error);
+                /* silent */
         }
     }
     
@@ -3110,12 +3099,10 @@ function clearAllScoreEdits() {
                                                 scoreCell.style[prop] = "";
                                         });
                                 }
-                        } catch (error) {
-                                console.error("Error restoring category at index", i, error);
-                        }
+                        } catch (error) { /* skip category */ }
                 }
         } catch (error) {
-                console.error("Error in restoreOriginalCategoryData:", error);
+                /* silent */
         }
     }
     
@@ -3133,7 +3120,7 @@ function clearAllScoreEdits() {
                         }
                 }
         } catch (error) {
-                console.error("Error saving original rows:", error);
+                /* silent */
         }
     }
     
@@ -3151,7 +3138,7 @@ function clearAllScoreEdits() {
                         originalRows.forEach((row) => table.appendChild(row.cloneNode(true)));
                 }
         } catch (error) {
-                console.error("Error restoring original rows:", error);
+                /* silent */
         }
     }
 
@@ -3308,7 +3295,7 @@ function createAssignmentDetailPopup() {
         document.addEventListener("keydown", handleAssignmentDetailKeydown);
         
     } catch (error) {
-        console.error("Error creating assignment detail popup:", error);
+        /* silent */
     }
 }
 
@@ -3359,7 +3346,7 @@ function showAssignmentDetails(data) {
         assignmentDetailPopup.style.display = "block";
         
     } catch (error) {
-        console.error("Error showing assignment details:", error);
+        /* silent */
     }
 }
 
@@ -3372,7 +3359,7 @@ function hideAssignmentDetails() {
             assignmentDetailPopup.style.display = "none";
         }
     } catch (error) {
-        console.error("Error hiding assignment details:", error);
+        /* silent */
     }
 }
 

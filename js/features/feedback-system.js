@@ -187,7 +187,7 @@ function sendViaWeb3Forms(feedbackText) {
             
             // Additional useful info
             formData.append('timestamp', new Date().toISOString());
-            formData.append('extension_version', '1.7.0');
+            formData.append('extension_version', chrome.runtime.getManifest().version);
             formData.append('page_url', window.location.href);
             formData.append('user_agent', navigator.userAgent);
             

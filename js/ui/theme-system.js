@@ -107,7 +107,6 @@ function applyPopupTheme(themeName) {
     try {
         const popup = document.getElementById('focus-grade-simulator-popup');
         if (!popup) {
-            console.error('THEME SWITCH - Popup not found');
             return;
         }
 
