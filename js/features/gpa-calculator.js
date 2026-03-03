@@ -1929,7 +1929,14 @@ function renderForgivenessPanel() {
 				});
 				typeSelect.addEventListener('change', (e) => {
 					const val = e.target.value;
-					if (action) action.newType = (val === 'auto') ? classEntry.type : val;
+					if (action) {
+						action.newType = (val === 'auto') ? classEntry.type : val;
+						// For manual classes, also update old type since user defines everything
+						if (classEntry.isManual) {
+							action.oldType = action.newType;
+							classEntry.type = action.newType;
+						}
+					}
 					calculateForgiveness();
 					renderForgivenessResults();
 				});
@@ -2125,19 +2132,6 @@ function showForgivenessPanel() {
 	}
 }
 
-/**
- * Hides forgiveness panel and returns to GPA mode select
- */
-function hideForgivenessPanel() {
-	try {
-		const forgivenessPanel = document.getElementById('fgs-forgiveness-panel');
-		if (forgivenessPanel) forgivenessPanel.style.display = 'none';
-
-		showGPAModeSelect();
-	} catch (error) {
-		// Silent error handling
-	}
-}
 
 /**
  * Adds a manually-created class to the forgiveness simulator.

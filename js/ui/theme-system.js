@@ -863,28 +863,7 @@ function generateThemedCSS(theme) {
             display: flex;
             flex-direction: column;
             gap: 0;
-            max-height: 440px;
-            overflow-y: auto;
-            padding-right: 5px;
             margin-bottom: 12px;
-        }
-        
-        .fgs-gpa-class-list::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .fgs-gpa-class-list::-webkit-scrollbar-track {
-            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'};
-            border-radius: 3px;
-        }
-        
-        .fgs-gpa-class-list::-webkit-scrollbar-thumb {
-            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)'};
-            border-radius: 3px;
-        }
-        
-        .fgs-gpa-class-list::-webkit-scrollbar-thumb:hover {
-            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.3)'};
         }
         
         .fgs-gpa-class-item {
@@ -1480,29 +1459,6 @@ function generateThemedCSS(theme) {
            =========================================== */
 
         /* Forgiveness button in GPA step 1 */
-        .fgs-gpa-forgiveness-link {
-            display: flex;
-            justify-content: center;
-            margin-top: 8px;
-        }
-
-        .fgs-forgiveness-btn {
-            background: ${isLightTheme ? 'rgba(220, 53, 69, 0.08)' : 'rgba(220, 53, 69, 0.15)'};
-            color: ${isLightTheme ? '#c0392b' : '#f8d7da'};
-            border: 1px solid ${isLightTheme ? 'rgba(220, 53, 69, 0.25)' : 'rgba(220, 53, 69, 0.35)'};
-            padding: 6px 14px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .fgs-forgiveness-btn:hover {
-            background: ${isLightTheme ? 'rgba(220, 53, 69, 0.15)' : 'rgba(220, 53, 69, 0.25)'};
-            transform: translateY(-1px);
-        }
-
         /* Forgiveness panel */
         .fgs-forgiveness-panel {
             display: flex;
@@ -1515,22 +1471,6 @@ function generateThemedCSS(theme) {
             display: flex;
             flex-direction: column;
             gap: 8px;
-            max-height: 220px;
-            overflow-y: auto;
-            padding-right: 4px;
-        }
-
-        .fgs-forgiveness-class-list::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .fgs-forgiveness-class-list::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .fgs-forgiveness-class-list::-webkit-scrollbar-thumb {
-            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'};
-            border-radius: 4px;
         }
 
         /* Individual class card */

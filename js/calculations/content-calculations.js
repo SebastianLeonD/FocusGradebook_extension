@@ -43,7 +43,7 @@ function nearlyEqual(a, b, epsilon = SCORE_COMPARE_EPSILON) {
     return Math.abs(na - nb) <= epsilon;
 }
 
-function showToast(message, type = 'error') {
+function showToast(message, type = 'error', duration = 4000) {
     const colors = { error: '#e74c3c', warning: '#f39c12', info: '#3498db' };
     const accent = colors[type] || colors.error;
     const container = document.getElementById('fgs-toast-container') || (() => {
@@ -69,7 +69,7 @@ function showToast(message, type = 'error') {
         toast.style.transform = 'translateY(-8px)';
         setTimeout(() => toast.remove(), 300);
     };
-    setTimeout(dismiss, 4000);
+    setTimeout(dismiss, duration);
 }
 
 function getEditorCellCSS(height) {
@@ -271,6 +271,16 @@ function handleAdd() {
         if (!earned || !total || (isWeighted && !category)) {
             showToast("Please fill out all required fields.", "warning");
             return;
+        }
+
+        // Warn if Focus didn't load the Points column (grades will be inaccurate)
+        const pointsHeaders = document.querySelectorAll('.grades-grid.dataTable thead th');
+        let hasPointsColumn = false;
+        for (const h of pointsHeaders) {
+            if (h.textContent.trim() === 'Points') { hasPointsColumn = true; break; }
+        }
+        if (!hasPointsColumn) {
+            showToast('No Points column detected — grades may be inaccurate. Try going to the home page, opening a class that has the Points column, then switching to this class from the dropdown.', 'warning', 6000);
         }
         
         const data = { 

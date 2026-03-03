@@ -87,6 +87,13 @@
                 // Auto-detect class type
                 mode = detectClassType();
 
+                // Warn if Focus didn't load the points/score column
+                if (!hasValidScoreColumn()) {
+                        if (typeof showToast === 'function') {
+                                showToast('No Points column detected — grades may be inaccurate. Try going to the home page, opening a class that has the Points column, then switching to this class from the dropdown.', 'warning', 6000);
+                        }
+                }
+
                 const modeSelection = getCachedElement("fgs-mode-selection");
                 const calculatorForm = getCachedElement("fgs-calculator-form");
                 const gpaCalculator = getCachedElement("fgs-gpa-calculator");
@@ -150,6 +157,23 @@
                         );
                 } catch (error) {
                         return true; // Default to allowing if error
+                }
+        }
+
+        /**
+         * Checks if Focus loaded the score/points column in the gradebook.
+         * Focus sometimes glitches and omits this column, breaking calculations.
+         */
+        function hasValidScoreColumn() {
+                try {
+                        // Check if the assignment table has a "Points" column header
+                        const headers = document.querySelectorAll('.grades-grid.dataTable thead th');
+                        for (const header of headers) {
+                                if (header.textContent.trim() === 'Points') return true;
+                        }
+                        return false;
+                } catch (error) {
+                        return true;
                 }
         }
 
