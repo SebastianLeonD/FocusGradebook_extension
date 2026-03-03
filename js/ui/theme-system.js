@@ -1475,6 +1475,397 @@ function generateThemedCSS(theme) {
             font-weight: 500;
         }
         
+        /* ===========================================
+           FORGIVENESS SIMULATOR STYLES
+           =========================================== */
+
+        /* Forgiveness button in GPA step 1 */
+        .fgs-gpa-forgiveness-link {
+            display: flex;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .fgs-forgiveness-btn {
+            background: ${isLightTheme ? 'rgba(220, 53, 69, 0.08)' : 'rgba(220, 53, 69, 0.15)'};
+            color: ${isLightTheme ? '#c0392b' : '#f8d7da'};
+            border: 1px solid ${isLightTheme ? 'rgba(220, 53, 69, 0.25)' : 'rgba(220, 53, 69, 0.35)'};
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .fgs-forgiveness-btn:hover {
+            background: ${isLightTheme ? 'rgba(220, 53, 69, 0.15)' : 'rgba(220, 53, 69, 0.25)'};
+            transform: translateY(-1px);
+        }
+
+        /* Forgiveness panel */
+        .fgs-forgiveness-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Eligible class list */
+        .fgs-forgiveness-class-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .fgs-forgiveness-class-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .fgs-forgiveness-class-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .fgs-forgiveness-class-list::-webkit-scrollbar-thumb {
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'};
+            border-radius: 4px;
+        }
+
+        /* Individual class card */
+        .fgs-forgiveness-class-card {
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.06)'};
+            border: 1px solid ${isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)'};
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .fgs-forgiveness-class-card:hover {
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.07)' : 'rgba(255, 255, 255, 0.1)'};
+            border-color: ${isLightTheme ? 'rgba(220, 53, 69, 0.3)' : 'rgba(220, 53, 69, 0.4)'};
+        }
+
+        .fgs-forgiveness-class-card.fgs-forgiveness-selected {
+            background: ${isLightTheme ? 'rgba(40, 167, 69, 0.06)' : 'rgba(40, 167, 69, 0.1)'};
+            border-color: ${isLightTheme ? 'rgba(40, 167, 69, 0.3)' : 'rgba(40, 167, 69, 0.4)'};
+            border-width: 2px;
+        }
+
+        /* Card header row */
+        .fgs-forgiveness-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fgs-forgiveness-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .fgs-forgiveness-class-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: ${theme.textColor};
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .fgs-forgiveness-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 3px;
+            flex-wrap: wrap;
+        }
+
+        .fgs-forgiveness-year {
+            font-size: 10px;
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)'};
+            font-weight: 500;
+        }
+
+        .fgs-forgiveness-semester-type {
+            font-size: 10px;
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)'};
+            font-weight: 500;
+        }
+
+        /* D/F grade badge */
+        .fgs-forgiveness-grade-badge {
+            background: rgba(220, 53, 69, 0.85);
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Edit row (new grade, credits, type) */
+        .fgs-forgiveness-edit-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .fgs-forgiveness-edit-field {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .fgs-forgiveness-edit-field label {
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)'};
+        }
+
+        .fgs-forgiveness-old-grade,
+        .fgs-forgiveness-new-grade,
+        .fgs-forgiveness-credits,
+        .fgs-forgiveness-type {
+            background: ${gradeSelectBackground} !important;
+            color: ${gradeSelectColor} !important;
+            border: 1px solid ${gradeSelectBorder};
+            border-radius: 4px;
+            padding: 5px 4px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .fgs-forgiveness-old-grade:hover,
+        .fgs-forgiveness-new-grade:hover,
+        .fgs-forgiveness-credits:hover,
+        .fgs-forgiveness-type:hover {
+            border-color: ${gradeSelectHoverBorder};
+        }
+
+        .fgs-forgiveness-old-grade:focus,
+        .fgs-forgiveness-new-grade:focus,
+        .fgs-forgiveness-credits:focus,
+        .fgs-forgiveness-type:focus {
+            outline: none;
+            border-color: ${theme.buttonPrimary};
+            box-shadow: 0 0 0 2px ${theme.buttonPrimary}33;
+        }
+
+        /* Results area */
+        .fgs-forgiveness-empty-results {
+            text-align: center;
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)'};
+            font-size: 11px;
+            padding: 12px 0;
+            font-style: italic;
+        }
+
+        .fgs-forgiveness-rule-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)'};
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* Per-class breakdown */
+        .fgs-forgiveness-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: 8px;
+            padding: 8px 10px;
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.04)'};
+            border-radius: 6px;
+        }
+
+        .fgs-forgiveness-breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fgs-forgiveness-breakdown-name {
+            font-size: 11px;
+            color: ${theme.textColor};
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .fgs-forgiveness-breakdown-grades {
+            font-size: 11px;
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)'};
+            font-weight: 500;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Core GPA note */
+        .fgs-forgiveness-core-note {
+            background: rgba(52, 144, 220, 0.1);
+            border: 1px solid rgba(52, 144, 220, 0.25);
+            border-radius: 6px;
+            padding: 8px 10px;
+            margin-top: 8px;
+            font-size: 10px;
+            color: ${isLightTheme ? '#1a5276' : '#85c1e9'};
+            font-weight: 500;
+        }
+
+        /* Policy note */
+        .fgs-forgiveness-policy-note {
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.05)'};
+            border: 1px solid ${isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)'};
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-top: 8px;
+        }
+
+        .fgs-forgiveness-policy-note p {
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)'};
+            font-size: 10px;
+            line-height: 1.5;
+            margin: 0 0 4px 0;
+        }
+
+        .fgs-forgiveness-policy-note p:last-child {
+            margin-bottom: 0;
+        }
+
+        .fgs-forgiveness-policy-note p strong {
+            color: ${theme.textColor};
+        }
+
+        /* No eligible classes message */
+        .fgs-forgiveness-no-eligible {
+            margin-bottom: 8px;
+        }
+
+        /* GPA Mode Selection Buttons */
+        .fgs-gpa-mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .fgs-mode-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid ${isLightTheme ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.15)'};
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.06)'};
+            color: ${theme.textColor};
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .fgs-mode-btn:hover {
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.07)' : 'rgba(255, 255, 255, 0.12)'};
+            transform: translateY(-1px);
+        }
+
+        .fgs-forgiveness-mode-btn {
+            border-color: ${isLightTheme ? 'rgba(220, 53, 69, 0.25)' : 'rgba(220, 53, 69, 0.35)'};
+            background: ${isLightTheme ? 'rgba(220, 53, 69, 0.05)' : 'rgba(220, 53, 69, 0.1)'};
+            color: ${isLightTheme ? '#c0392b' : '#f8d7da'};
+        }
+
+        .fgs-forgiveness-mode-btn:hover {
+            background: ${isLightTheme ? 'rgba(220, 53, 69, 0.12)' : 'rgba(220, 53, 69, 0.2)'};
+        }
+
+        /* Manual Add Button */
+        .fgs-forgiveness-manual-add {
+            display: flex;
+            justify-content: center;
+            margin-top: 4px;
+        }
+
+        .fgs-forgiveness-add-manual-btn {
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.06)'};
+            border: 1px dashed ${isLightTheme ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'};
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)'};
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .fgs-forgiveness-add-manual-btn:hover {
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)'};
+            border-color: ${isLightTheme ? 'rgba(0, 0, 0, 0.35)' : 'rgba(255, 255, 255, 0.35)'};
+            color: ${theme.textColor};
+        }
+
+        /* Manual Class Name Input */
+        .fgs-forgiveness-manual-name {
+            background: ${gradeSelectBackground};
+            border: 1px solid ${isLightTheme ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)'};
+            color: ${theme.textColor};
+            border-radius: 4px;
+            padding: 3px 6px;
+            font-size: 12px;
+            font-weight: 600;
+            width: 140px;
+        }
+
+        .fgs-forgiveness-manual-name:focus {
+            outline: none;
+            border-color: ${theme.buttonPrimary};
+        }
+
+        /* Manual Card Styling */
+        .fgs-forgiveness-manual-card {
+            border-style: dashed;
+        }
+
+        /* Remove Manual Class Button */
+        .fgs-forgiveness-remove-manual {
+            background: none;
+            border: none;
+            color: ${isLightTheme ? 'rgba(220, 53, 69, 0.6)' : 'rgba(220, 53, 69, 0.7)'};
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+            border-radius: 4px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .fgs-forgiveness-remove-manual:hover {
+            color: #dc3545;
+            background: ${isLightTheme ? 'rgba(220, 53, 69, 0.1)' : 'rgba(220, 53, 69, 0.2)'};
+        }
+
         /* FEEDBACK BOX - Always visible at bottom */
         .fgs-feedback-box {
             background: ${theme.isTransparent ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.08)'};

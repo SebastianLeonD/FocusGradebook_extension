@@ -37,6 +37,22 @@ let gpaCalculatorData = {
     selectedSemester: 'semester2' // 'semester1', 'semester2', or 'fullYear'
 };
 
+// ===========================================
+// FORGIVENESS SIMULATOR STATE
+// ===========================================
+let forgivenessData = {
+	allClasses: [],
+	eligibleClasses: [],
+	selectedActions: [], // { classId, oldGrade, oldCredits, oldType, newGrade, newCredits, newType, isCore }
+	results: null
+};
+
+// Grades eligible for forgiveness (D+, D, F)
+const FORGIVENESS_ELIGIBLE_GRADES = new Set(['D+', 'D', 'F']);
+
+// Grades students can retake to (C or higher)
+const FORGIVENESS_NEW_GRADE_OPTIONS = ['A', 'B+', 'B', 'C+', 'C'];
+
 // Default credits based on semester mode
 const DEFAULT_CREDITS = {
     semester1: 0.5,
@@ -694,6 +710,147 @@ function extractClassData() {
 }
 
 /**
+ * Extracts ALL class data from the Focus gradebook (all years, not just current).
+ * Used by the forgiveness simulator to find D/F courses from prior semesters.
+ * Computes semester grades for each semester and filters to eligible classes.
+ */
+function extractAllClassData() {
+	try {
+		const rows = document.querySelectorAll('.student-grade');
+		forgivenessData.allClasses = [];
+		forgivenessData.eligibleClasses = [];
+
+		rows.forEach((row, index) => {
+			try {
+				const yearCell = row.querySelector('[data-field="syear_display"]');
+				const courseCell = row.querySelector('[data-field="course_name"]');
+				if (!yearCell || !courseCell) return;
+
+				const year = yearCell.textContent.trim();
+				const courseName = courseCell.textContent.trim();
+				if (!courseName) return;
+				if (courseName.toUpperCase().includes('STUDY HALL')) return;
+
+				// Quarter cells
+				const q1Cell = row.querySelector('[data-field="mp_q1"] a') || row.querySelector('[data-field="mp_q1"]');
+				const q2Cell = row.querySelector('[data-field="mp_q2"] a') || row.querySelector('[data-field="mp_q2"]');
+				const q3Cell = row.querySelector('[data-field="mp_q3"] a') || row.querySelector('[data-field="mp_q3"]');
+				const q4Cell = row.querySelector('[data-field="mp_q4"] a') || row.querySelector('[data-field="mp_q4"]');
+
+				// Exam cells
+				const s1ExamCell = row.querySelector('[data-field="mp_s1_exam"] a, [data-field="mp_exam"] a, [data-field="mp_exam1"] a, [data-field="mp_exm"] a, [data-field="mp_ex"] a')
+					|| row.querySelector('[data-field="mp_s1_exam"], [data-field="mp_exam"], [data-field="mp_exam1"], [data-field="mp_exm"], [data-field="mp_ex"]')
+					|| row.querySelector('[title*="S1 Exam"], [title*="Exam Grade"]')
+					|| Array.from(row.querySelectorAll('td')).find(cell => {
+						const title = cell.getAttribute('title') || '';
+						const text = cell.textContent.trim();
+						return (title.includes('S1 Exam') || title.includes('Exam Grade')) && text && text !== 'NG' && text !== '--';
+					});
+
+				const s2ExamCell = row.querySelector('[data-field="mp_s2_exam"] a')
+					|| row.querySelector('[data-field="mp_s2_exam"]')
+					|| row.querySelector('[title*="S2 Exam"]')
+					|| Array.from(row.querySelectorAll('td')).find(cell => {
+						const title = cell.getAttribute('title') || '';
+						const text = cell.textContent.trim();
+						return title.includes('S2 Exam') && text && text !== 'NG' && text !== '--';
+					});
+
+				// Semester grade cells (S1/S2 final grade columns — Focus shows these for prior years)
+				const s1GradeCell = row.querySelector('[data-field="mp_s1"] a') || row.querySelector('[data-field="mp_s1"]')
+					|| row.querySelector('[data-field="mp_sem1"] a') || row.querySelector('[data-field="mp_sem1"]');
+				const s2GradeCell = row.querySelector('[data-field="mp_s2"] a') || row.querySelector('[data-field="mp_s2"]')
+					|| row.querySelector('[data-field="mp_sem2"] a') || row.querySelector('[data-field="mp_sem2"]');
+
+				const q1Letter = extractLetterFromGradeCell(q1Cell);
+				const q2Letter = extractLetterFromGradeCell(q2Cell);
+				const q3Letter = extractLetterFromGradeCell(q3Cell);
+				const q4Letter = extractLetterFromGradeCell(q4Cell);
+				const s1ExamLetter = extractLetterFromGradeCell(s1ExamCell);
+				const s2ExamLetter = extractLetterFromGradeCell(s2ExamCell);
+				const s1DirectGrade = extractLetterFromGradeCell(s1GradeCell);
+				const s2DirectGrade = extractLetterFromGradeCell(s2GradeCell);
+
+				// Skip rows with absolutely no grade data at all
+				if (!q1Letter && !q2Letter && !q3Letter && !q4Letter &&
+					!s1ExamLetter && !s2ExamLetter && !s1DirectGrade && !s2DirectGrade) {
+					return;
+				}
+
+				const courseType = detectCourseType(courseName);
+				const isCore = isCoreSubject(courseName);
+				const quarters = { q1: q1Letter, q2: q2Letter, q3: q3Letter, q4: q4Letter, s1Exam: s1ExamLetter, s2Exam: s2ExamLetter };
+
+				// Try computing semester grades from quarters first
+				const sem1Analysis = bcpsSemesterAnalysis(quarters, 'semester1');
+				const sem2Analysis = bcpsSemesterAnalysis(quarters, 'semester2');
+
+				// Build entries for each semester that has data
+				const semesters = [];
+
+				// Semester 1: computed from quarters, OR fallback to S1 column grade
+				if (sem1Analysis) {
+					semesters.push({
+						semesterType: 'S1',
+						semesterGrade: sem1Analysis.semesterLetter,
+						gradeSource: 'computed'
+					});
+				} else if (s1DirectGrade) {
+					semesters.push({
+						semesterType: 'S1',
+						semesterGrade: s1DirectGrade,
+						gradeSource: 'column'
+					});
+				}
+
+				// Semester 2: computed from quarters, OR fallback to S2 column grade
+				if (sem2Analysis) {
+					semesters.push({
+						semesterType: 'S2',
+						semesterGrade: sem2Analysis.semesterLetter,
+						gradeSource: 'computed'
+					});
+				} else if (s2DirectGrade) {
+					semesters.push({
+						semesterType: 'S2',
+						semesterGrade: s2DirectGrade,
+						gradeSource: 'column'
+					});
+				}
+
+				semesters.forEach((sem) => {
+					const classEntry = {
+						id: 'forgive_' + index + '_' + sem.semesterType,
+						name: courseName,
+						year: year,
+						type: courseType,
+						isCore: isCore,
+						credits: 0.5,
+						semesterType: sem.semesterType,
+						semesterGrade: sem.semesterGrade,
+						gradeSource: sem.gradeSource,
+						quarters: quarters
+					};
+
+					forgivenessData.allClasses.push(classEntry);
+
+					// Filter to eligible D/F classes
+					if (FORGIVENESS_ELIGIBLE_GRADES.has(sem.semesterGrade)) {
+						forgivenessData.eligibleClasses.push(classEntry);
+					}
+				});
+
+			} catch (error) {
+				// Continue processing other rows
+			}
+		});
+
+	} catch (error) {
+		// Silent error handling
+	}
+}
+
+/**
  * Auto-selects appropriate classes (first 7 credit courses)
  */
 function autoSelectClasses() {
@@ -707,17 +864,42 @@ function autoSelectClasses() {
 }
 
 /**
+ * Shows the GPA mode selection sub-menu (Calculate GPA or Credit Forgiveness)
+ */
+function showGPAModeSelect() {
+	try {
+		const modeSelect = document.getElementById('fgs-gpa-mode-select');
+		const step1 = document.getElementById('fgs-gpa-step-1');
+		const step2 = document.getElementById('fgs-gpa-step-2');
+		const forgivenessPanel = document.getElementById('fgs-forgiveness-panel');
+
+		if (step1) step1.style.display = 'none';
+		if (step2) step2.style.display = 'none';
+		if (forgivenessPanel) forgivenessPanel.style.display = 'none';
+		if (modeSelect) modeSelect.style.display = 'flex';
+
+		setPopupSizeForInterface('mode-selection');
+	} catch (error) {
+		// Silent error handling
+	}
+}
+
+/**
  * Shows specific GPA calculator step with responsive sizing
  * Updated for multi-semester support
  */
 function showGPAStep(stepNumber) {
     try {
-        // Hide all steps
+        // Hide all steps (including mode select and forgiveness panel)
+        const modeSelect = document.getElementById('fgs-gpa-mode-select');
         const step1 = document.getElementById('fgs-gpa-step-1');
         const step2 = document.getElementById('fgs-gpa-step-2');
+        const forgivenessPanel = document.getElementById('fgs-forgiveness-panel');
 
+        if (modeSelect) modeSelect.style.display = 'none';
         if (step1) step1.style.display = 'none';
         if (step2) step2.style.display = 'none';
+        if (forgivenessPanel) forgivenessPanel.style.display = 'none';
 
         // Show target step and adjust popup size
         if (stepNumber === 1) {
@@ -1445,6 +1627,575 @@ function validateGPAGradeInputs(showAlert = true) {
 
 if (typeof window !== 'undefined') {
     window.validateGPAGradeInputs = validateGPAGradeInputs;
+}
+
+// ===========================================
+// FORGIVENESS SIMULATOR FUNCTIONS
+// ===========================================
+
+/**
+ * Calculates the GPA impact of forgiveness actions.
+ * Unweighted (State) GPA: old D/F grade is REMOVED, new grade REPLACES it.
+ * Weighted (District) GPA: old grade STAYS, new grade is ADDED on top.
+ */
+function calculateForgiveness() {
+	try {
+		const baseline = gpaCalculatorData.baselineStats;
+		if (!baseline) {
+			forgivenessData.results = null;
+			return;
+		}
+
+		const actions = forgivenessData.selectedActions;
+		if (actions.length === 0) {
+			forgivenessData.results = null;
+			return;
+		}
+
+		const baseCredits = baseline.totalCreditsAttempted ?? baseline.totalCreditsEarned ?? null;
+		const baseQP = baseline.qualityPoints ??
+			(baseline.cumulativeGPA !== null && baseCredits !== null ? baseline.cumulativeGPA * baseCredits : null);
+
+		if (baseCredits === null || baseQP === null) {
+			forgivenessData.results = null;
+			return;
+		}
+
+		// --- Unweighted (State) GPA: remove old, add new ---
+		let newUnweightedQP = baseQP;
+		let newUnweightedCredits = baseCredits;
+
+		actions.forEach((action) => {
+			newUnweightedQP -= getUnweightedPoints(action.oldGrade) * action.oldCredits;
+			newUnweightedQP += getUnweightedPoints(action.newGrade) * action.newCredits;
+			newUnweightedCredits = newUnweightedCredits - action.oldCredits + action.newCredits;
+		});
+
+		const projectedUnweighted = newUnweightedCredits > 0 ? roundGPA(newUnweightedQP / newUnweightedCredits) : null;
+		const unweightedDelta = (projectedUnweighted !== null && baseline.cumulativeGPA !== null)
+			? projectedUnweighted - baseline.cumulativeGPA : null;
+
+		// --- Weighted (District) GPA: old stays, new added on top ---
+		const baseWeightedQP = (baseline.weightedGPA !== null && baseCredits !== null)
+			? baseline.weightedGPA * baseCredits : null;
+
+		let projectedWeighted = null;
+		let weightedDelta = null;
+
+		if (baseWeightedQP !== null) {
+			let newWeightedQP = baseWeightedQP;
+			let newWeightedCredits = baseCredits;
+
+			actions.forEach((action) => {
+				newWeightedQP += getWeightedPoints(action.newGrade, action.newType) * action.newCredits;
+				newWeightedCredits += action.newCredits;
+			});
+
+			projectedWeighted = newWeightedCredits > 0 ? roundGPA(newWeightedQP / newWeightedCredits) : null;
+			weightedDelta = (projectedWeighted !== null && baseline.weightedGPA !== null)
+				? projectedWeighted - baseline.weightedGPA : null;
+		}
+
+		const hasCoreClasses = actions.some((a) => a.isCore);
+
+		forgivenessData.results = {
+			unweighted: {
+				baseline: baseline.cumulativeGPA,
+				projected: projectedUnweighted,
+				delta: unweightedDelta,
+				baseCredits: baseCredits,
+				newCredits: newUnweightedCredits
+			},
+			weighted: {
+				baseline: baseline.weightedGPA,
+				projected: projectedWeighted,
+				delta: weightedDelta,
+				baseCredits: baseCredits,
+				newCredits: baseCredits + actions.reduce((sum, a) => sum + a.newCredits, 0)
+			},
+			hasCoreClasses: hasCoreClasses,
+			actionCount: actions.length
+		};
+
+	} catch (error) {
+		forgivenessData.results = null;
+	}
+}
+
+/**
+ * Renders the forgiveness panel: eligible class cards + live results.
+ * Called when forgiveness panel is shown and when selections change.
+ * Note: Uses innerHTML for templating consistently with renderClassList() and renderResults()
+ * in the same file. All data is sourced from DOM-scraped grades (no user-submitted content).
+ */
+function renderForgivenessPanel() {
+	try {
+		const listContainer = document.getElementById('fgs-forgiveness-class-list');
+		const resultsContainer = document.getElementById('fgs-forgiveness-results');
+		const noEligible = document.getElementById('fgs-forgiveness-no-eligible');
+
+		if (!listContainer) return;
+
+		// Clear the list
+		while (listContainer.firstChild) {
+			listContainer.removeChild(listContainer.firstChild);
+		}
+
+		if (forgivenessData.eligibleClasses.length === 0) {
+			if (noEligible) noEligible.style.display = 'block';
+			if (resultsContainer) resultsContainer.textContent = '';
+			return;
+		}
+
+		// Show "no eligible" hint if only manual classes exist (no detected D/F courses)
+		const hasExtractedEligible = forgivenessData.eligibleClasses.some((c) => !c.isManual);
+		if (noEligible) noEligible.style.display = hasExtractedEligible ? 'none' : 'block';
+
+		forgivenessData.eligibleClasses.forEach((classEntry) => {
+			const isSelected = forgivenessData.selectedActions.some((a) => a.classId === classEntry.id);
+			const action = forgivenessData.selectedActions.find((a) => a.classId === classEntry.id);
+
+			const card = document.createElement('div');
+			card.className = 'fgs-forgiveness-class-card' + (isSelected ? ' fgs-forgiveness-selected' : '');
+			if (classEntry.isManual) card.className += ' fgs-forgiveness-manual-card';
+			card.setAttribute('data-class-id', classEntry.id);
+
+			// Build header
+			const headerDiv = document.createElement('div');
+			headerDiv.className = 'fgs-forgiveness-card-header';
+
+			const infoDiv = document.createElement('div');
+			infoDiv.className = 'fgs-forgiveness-card-info';
+
+			// Manual classes get an editable name input; extracted classes get static text
+			let nameDiv;
+			if (classEntry.isManual) {
+				nameDiv = document.createElement('input');
+				nameDiv.type = 'text';
+				nameDiv.className = 'fgs-forgiveness-class-name fgs-forgiveness-manual-name';
+				nameDiv.value = classEntry.name;
+				nameDiv.placeholder = 'Course name';
+				nameDiv.addEventListener('input', (e) => {
+					classEntry.name = e.target.value;
+				});
+				// Prevent card toggle when clicking input
+				nameDiv.addEventListener('click', (e) => { e.stopPropagation(); });
+			} else {
+				nameDiv = document.createElement('div');
+				nameDiv.className = 'fgs-forgiveness-class-name';
+				nameDiv.title = classEntry.name;
+				nameDiv.textContent = classEntry.name;
+			}
+
+			const metaDiv = document.createElement('div');
+			metaDiv.className = 'fgs-forgiveness-card-meta';
+
+			const yearSpan = document.createElement('span');
+			yearSpan.className = 'fgs-forgiveness-year';
+			yearSpan.textContent = classEntry.isManual ? 'Manual' : classEntry.year;
+
+			const semSpan = document.createElement('span');
+			semSpan.className = 'fgs-forgiveness-semester-type';
+			semSpan.textContent = classEntry.semesterType;
+
+			const typeSpan = document.createElement('span');
+			typeSpan.className = 'fgs-gpa-class-type ' + classEntry.type.toLowerCase();
+			typeSpan.textContent = getTypeLabel(classEntry.type);
+
+			metaDiv.appendChild(yearSpan);
+			metaDiv.appendChild(semSpan);
+			metaDiv.appendChild(typeSpan);
+
+			if (classEntry.isCore) {
+				const coreBadge = document.createElement('span');
+				coreBadge.className = 'fgs-gpa-core-tag';
+				coreBadge.textContent = 'Core';
+				metaDiv.appendChild(coreBadge);
+			}
+
+			infoDiv.appendChild(nameDiv);
+			infoDiv.appendChild(metaDiv);
+
+			const gradeBadge = document.createElement('span');
+			gradeBadge.className = 'fgs-forgiveness-grade-badge';
+			gradeBadge.textContent = classEntry.semesterGrade;
+
+			headerDiv.appendChild(infoDiv);
+			headerDiv.appendChild(gradeBadge);
+			card.appendChild(headerDiv);
+
+			// Build edit row if selected
+			if (isSelected) {
+				const editRow = document.createElement('div');
+				editRow.className = 'fgs-forgiveness-edit-row';
+
+				// Old grade override field (lets user correct the detected grade)
+				const oldGradeField = document.createElement('div');
+				oldGradeField.className = 'fgs-forgiveness-edit-field';
+				const oldGradeLabel = document.createElement('label');
+				oldGradeLabel.textContent = 'Old Grade:';
+				const oldGradeSelect = document.createElement('select');
+				oldGradeSelect.className = 'fgs-forgiveness-old-grade';
+				oldGradeSelect.setAttribute('data-class-id', classEntry.id);
+				['D+', 'D', 'F'].forEach((g) => {
+					const opt = document.createElement('option');
+					opt.value = g;
+					opt.textContent = g;
+					if (action && action.oldGrade === g) opt.selected = true;
+					oldGradeSelect.appendChild(opt);
+				});
+				oldGradeField.appendChild(oldGradeLabel);
+				oldGradeField.appendChild(oldGradeSelect);
+
+				// New grade field
+				const gradeField = document.createElement('div');
+				gradeField.className = 'fgs-forgiveness-edit-field';
+				const gradeLabel = document.createElement('label');
+				gradeLabel.textContent = 'New Grade:';
+				const gradeSelect = document.createElement('select');
+				gradeSelect.className = 'fgs-forgiveness-new-grade';
+				gradeSelect.setAttribute('data-class-id', classEntry.id);
+				FORGIVENESS_NEW_GRADE_OPTIONS.forEach((g) => {
+					const opt = document.createElement('option');
+					opt.value = g;
+					opt.textContent = g;
+					if (action && action.newGrade === g) opt.selected = true;
+					gradeSelect.appendChild(opt);
+				});
+				gradeField.appendChild(gradeLabel);
+				gradeField.appendChild(gradeSelect);
+
+				// Credits field
+				const creditsField = document.createElement('div');
+				creditsField.className = 'fgs-forgiveness-edit-field';
+				const creditsLabel = document.createElement('label');
+				creditsLabel.textContent = 'Credits:';
+				const creditsSelect = document.createElement('select');
+				creditsSelect.className = 'fgs-forgiveness-credits';
+				creditsSelect.setAttribute('data-class-id', classEntry.id);
+				CREDIT_OPTIONS.forEach((c) => {
+					const opt = document.createElement('option');
+					opt.value = c;
+					opt.textContent = c;
+					if (action && action.newCredits === c) opt.selected = true;
+					creditsSelect.appendChild(opt);
+				});
+				creditsField.appendChild(creditsLabel);
+				creditsField.appendChild(creditsSelect);
+
+				// Type field
+				const typeField = document.createElement('div');
+				typeField.className = 'fgs-forgiveness-edit-field';
+				const typeLabel = document.createElement('label');
+				typeLabel.textContent = 'Type:';
+				const typeSelect = document.createElement('select');
+				typeSelect.className = 'fgs-forgiveness-type';
+				typeSelect.setAttribute('data-class-id', classEntry.id);
+				COURSE_TYPE_OPTIONS.forEach((optDef) => {
+					const opt = document.createElement('option');
+					opt.value = optDef.value;
+					opt.textContent = optDef.label;
+					if (action && action.newType === optDef.value) opt.selected = true;
+					typeSelect.appendChild(opt);
+				});
+				typeField.appendChild(typeLabel);
+				typeField.appendChild(typeSelect);
+
+				editRow.appendChild(oldGradeField);
+				editRow.appendChild(gradeField);
+				editRow.appendChild(creditsField);
+				editRow.appendChild(typeField);
+				card.appendChild(editRow);
+
+				// Wire dropdown events
+				oldGradeSelect.addEventListener('change', (e) => {
+					if (action) {
+						action.oldGrade = e.target.value;
+						// Also update the badge text
+						gradeBadge.textContent = e.target.value;
+					}
+					calculateForgiveness();
+					renderForgivenessResults();
+				});
+				gradeSelect.addEventListener('change', (e) => {
+					if (action) action.newGrade = e.target.value;
+					calculateForgiveness();
+					renderForgivenessResults();
+				});
+				creditsSelect.addEventListener('change', (e) => {
+					if (action) action.newCredits = parseFloat(e.target.value);
+					calculateForgiveness();
+					renderForgivenessResults();
+				});
+				typeSelect.addEventListener('change', (e) => {
+					const val = e.target.value;
+					if (action) action.newType = (val === 'auto') ? classEntry.type : val;
+					calculateForgiveness();
+					renderForgivenessResults();
+				});
+			}
+
+			// Manual classes get a remove button
+			if (classEntry.isManual) {
+				const removeBtn = document.createElement('button');
+				removeBtn.className = 'fgs-forgiveness-remove-manual';
+				removeBtn.textContent = '\u00d7';
+				removeBtn.title = 'Remove this class';
+				removeBtn.addEventListener('click', (e) => {
+					e.stopPropagation();
+					removeManualForgivenessClass(classEntry.id);
+				});
+				headerDiv.appendChild(removeBtn);
+			}
+
+			listContainer.appendChild(card);
+
+			// Wire card header click to toggle selection
+			headerDiv.addEventListener('click', () => {
+				toggleForgivenessSelection(classEntry);
+			});
+		});
+
+		renderForgivenessResults();
+	} catch (error) {
+		// Silent error handling
+	}
+}
+
+/**
+ * Toggles selection of a class for forgiveness.
+ */
+function toggleForgivenessSelection(classEntry) {
+	const idx = forgivenessData.selectedActions.findIndex((a) => a.classId === classEntry.id);
+	if (idx >= 0) {
+		forgivenessData.selectedActions.splice(idx, 1);
+	} else {
+		forgivenessData.selectedActions.push({
+			classId: classEntry.id,
+			oldGrade: classEntry.semesterGrade,
+			oldCredits: classEntry.credits,
+			oldType: classEntry.type,
+			newGrade: 'C',
+			newCredits: classEntry.credits,
+			newType: classEntry.type,
+			isCore: classEntry.isCore
+		});
+	}
+	calculateForgiveness();
+	renderForgivenessPanel();
+}
+
+/**
+ * Renders the live forgiveness results using existing buildGPASummaryRow.
+ * Note: Uses innerHTML for result rendering consistently with renderResults() in the same file.
+ * All values are computed internally from grade point calculations (no user-submitted HTML).
+ */
+function renderForgivenessResults() {
+	try {
+		const container = document.getElementById('fgs-forgiveness-results');
+		if (!container) return;
+
+		const results = forgivenessData.results;
+
+		if (!results) {
+			container.textContent = '';
+			const emptyMsg = document.createElement('div');
+			emptyMsg.className = 'fgs-forgiveness-empty-results';
+			emptyMsg.textContent = 'Select a class above to simulate grade forgiveness.';
+			container.appendChild(emptyMsg);
+			return;
+		}
+
+		// Clear container
+		while (container.firstChild) {
+			container.removeChild(container.firstChild);
+		}
+
+		const summaryRowsDiv = document.createElement('div');
+		summaryRowsDiv.className = 'fgs-gpa-summary-rows';
+
+		// Unweighted row
+		if (results.unweighted.baseline !== null || results.unweighted.projected !== null) {
+			const ruleLabel = document.createElement('div');
+			ruleLabel.className = 'fgs-forgiveness-rule-label';
+			ruleLabel.textContent = 'Unweighted (State) \u2014 old grade removed';
+			summaryRowsDiv.appendChild(ruleLabel);
+
+			const creditsDetail = formatCredits(results.unweighted.baseCredits) + ' \u2192 ' + formatCredits(results.unweighted.newCredits) + ' credits';
+			const rowDiv = document.createElement('div');
+			// buildGPASummaryRow returns an HTML string - this is safe as all values are computed internally
+			rowDiv.innerHTML = buildGPASummaryRow('Cumulative GPA', results.unweighted.baseline, results.unweighted.projected, results.unweighted.delta, creditsDetail);
+			while (rowDiv.firstChild) {
+				summaryRowsDiv.appendChild(rowDiv.firstChild);
+			}
+		}
+
+		// Weighted row
+		if (results.weighted.baseline !== null || results.weighted.projected !== null) {
+			const ruleLabel = document.createElement('div');
+			ruleLabel.className = 'fgs-forgiveness-rule-label';
+			ruleLabel.textContent = 'Weighted (District) \u2014 old grade kept + new added';
+			summaryRowsDiv.appendChild(ruleLabel);
+
+			const creditsDetail = formatCredits(results.weighted.baseCredits) + ' \u2192 ' + formatCredits(results.weighted.newCredits) + ' credits';
+			const rowDiv = document.createElement('div');
+			rowDiv.innerHTML = buildGPASummaryRow('Weighted GPA', results.weighted.baseline, results.weighted.projected, results.weighted.delta, creditsDetail);
+			while (rowDiv.firstChild) {
+				summaryRowsDiv.appendChild(rowDiv.firstChild);
+			}
+		}
+
+		container.appendChild(summaryRowsDiv);
+
+		// Per-class breakdown
+		if (forgivenessData.selectedActions.length > 0) {
+			const breakdownDiv = document.createElement('div');
+			breakdownDiv.className = 'fgs-forgiveness-breakdown';
+
+			forgivenessData.selectedActions.forEach((action) => {
+				const cls = forgivenessData.eligibleClasses.find((c) => c.id === action.classId);
+				const name = cls ? cls.name : 'Unknown';
+				const oldPts = getUnweightedPoints(action.oldGrade);
+				const newPts = getUnweightedPoints(action.newGrade);
+
+				const item = document.createElement('div');
+				item.className = 'fgs-forgiveness-breakdown-item';
+
+				const nameSpan = document.createElement('span');
+				nameSpan.className = 'fgs-forgiveness-breakdown-name';
+				nameSpan.textContent = name;
+
+				const gradeSpan = document.createElement('span');
+				gradeSpan.className = 'fgs-forgiveness-breakdown-grades';
+				gradeSpan.textContent = action.oldGrade + ' \u2192 ' + action.newGrade + ' (' + oldPts.toFixed(1) + ' \u2192 ' + newPts.toFixed(1) + ' pts)';
+
+				item.appendChild(nameSpan);
+				item.appendChild(gradeSpan);
+				breakdownDiv.appendChild(item);
+			});
+
+			container.appendChild(breakdownDiv);
+		}
+
+		// Core GPA note
+		if (results.hasCoreClasses) {
+			const coreNote = document.createElement('div');
+			coreNote.className = 'fgs-forgiveness-core-note';
+			coreNote.textContent = 'Core GPA will also be affected for core courses marked above.';
+			container.appendChild(coreNote);
+		}
+
+	} catch (error) {
+		// Silent error handling
+	}
+}
+
+/**
+ * Shows the forgiveness panel (hides GPA step 1/2)
+ */
+function showForgivenessPanel() {
+	try {
+		const modeSelect = document.getElementById('fgs-gpa-mode-select');
+		const step1 = document.getElementById('fgs-gpa-step-1');
+		const step2 = document.getElementById('fgs-gpa-step-2');
+		const forgivenessPanel = document.getElementById('fgs-forgiveness-panel');
+
+		if (modeSelect) modeSelect.style.display = 'none';
+		if (step1) step1.style.display = 'none';
+		if (step2) step2.style.display = 'none';
+		if (forgivenessPanel) forgivenessPanel.style.display = 'flex';
+
+		// Extract all classes if not done yet
+		if (forgivenessData.allClasses.length === 0) {
+			extractAllClassData();
+		}
+
+		// Make sure baseline stats are available
+		if (!gpaCalculatorData.baselineStats) {
+			extractBaselineGPAStats(false);
+		}
+
+		renderForgivenessPanel();
+		setPopupSizeForInterface('gpa-calculator');
+		setTimeout(() => {
+			if (typeof adjustPopupSize === 'function') adjustPopupSize();
+		}, 100);
+	} catch (error) {
+		// Silent error handling
+	}
+}
+
+/**
+ * Hides forgiveness panel and returns to GPA mode select
+ */
+function hideForgivenessPanel() {
+	try {
+		const forgivenessPanel = document.getElementById('fgs-forgiveness-panel');
+		if (forgivenessPanel) forgivenessPanel.style.display = 'none';
+
+		showGPAModeSelect();
+	} catch (error) {
+		// Silent error handling
+	}
+}
+
+/**
+ * Adds a manually-created class to the forgiveness simulator.
+ * Creates a new entry in eligibleClasses with editable name, grade, credits, and type.
+ */
+let manualForgivenessCounter = 0;
+function addManualForgivenessClass() {
+	try {
+		manualForgivenessCounter++;
+		const manualId = 'manual_' + manualForgivenessCounter;
+
+		const classEntry = {
+			id: manualId,
+			name: 'Manual Class ' + manualForgivenessCounter,
+			year: '',
+			type: 'Regular',
+			isCore: false,
+			credits: 0.5,
+			semesterType: 'S1',
+			semesterGrade: 'F',
+			gradeSource: 'manual',
+			quarters: {},
+			isManual: true
+		};
+
+		forgivenessData.eligibleClasses.push(classEntry);
+
+		// Auto-select the manual class
+		forgivenessData.selectedActions.push({
+			classId: manualId,
+			oldGrade: 'F',
+			oldCredits: 0.5,
+			oldType: 'Regular',
+			newGrade: 'C',
+			newCredits: 0.5,
+			newType: 'Regular',
+			isCore: false
+		});
+
+		calculateForgiveness();
+		renderForgivenessPanel();
+	} catch (error) {
+		// Silent error handling
+	}
+}
+
+/**
+ * Removes a manually-added class from the forgiveness simulator.
+ */
+function removeManualForgivenessClass(classId) {
+	try {
+		forgivenessData.eligibleClasses = forgivenessData.eligibleClasses.filter((c) => c.id !== classId);
+		forgivenessData.selectedActions = forgivenessData.selectedActions.filter((a) => a.classId !== classId);
+		calculateForgiveness();
+		renderForgivenessPanel();
+	} catch (error) {
+		// Silent error handling
+	}
 }
 
 /**

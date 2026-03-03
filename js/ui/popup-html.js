@@ -86,11 +86,25 @@ function getPopupHTML() {
             
             <!-- GPA CALCULATOR WIZARD -->
             <div class="fgs-gpa-calculator" id="fgs-gpa-calculator" style="display: none;">
-                
-                <!-- GPA Step 1: Class Selection -->
-                <div class="fgs-gpa-step" id="fgs-gpa-step-1">
+
+                <!-- GPA Mode Selection: Calculate GPA or Credit Forgiveness -->
+                <div class="fgs-gpa-step" id="fgs-gpa-mode-select">
                     <div class="fgs-gpa-header">
-                        <button class="fgs-gpa-back" id="fgs-gpa-back">← Back</button>
+                        <button class="fgs-gpa-back" id="fgs-gpa-mode-back">\u2190 Back</button>
+                    </div>
+                    <div class="fgs-gpa-content">
+                        <h3>GPA Tools</h3>
+                        <div class="fgs-gpa-mode-buttons">
+                            <button class="fgs-mode-btn" id="fgs-gpa-go-calc">Calculate Semester GPA</button>
+                            <button class="fgs-mode-btn fgs-forgiveness-mode-btn" id="fgs-gpa-go-forgiveness">Credit Forgiveness Simulator</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GPA Step 1: Class Selection -->
+                <div class="fgs-gpa-step" id="fgs-gpa-step-1" style="display: none;">
+                    <div class="fgs-gpa-header">
+                        <button class="fgs-gpa-back" id="fgs-gpa-back">\u2190 Back</button>
                         <span class="fgs-gpa-step-indicator">[Step 1 of 2]</span>
                     </div>
                     <div class="fgs-gpa-content">
@@ -296,6 +310,41 @@ function getPopupHTML() {
                     </div>
                 </div>
 
+                <!-- Forgiveness Simulator Panel -->
+                <div class="fgs-gpa-step fgs-forgiveness-panel" id="fgs-forgiveness-panel" style="display: none;">
+                    <div class="fgs-gpa-header">
+                        <button class="fgs-gpa-back" id="fgs-forgiveness-back">\u2190 Back</button>
+                        <span class="fgs-gpa-step-indicator">Grade Forgiveness</span>
+                    </div>
+                    <div class="fgs-gpa-content">
+                        <h3>Credit Forgiveness Simulator</h3>
+                        <p class="fgs-gpa-subheading">Select D or F courses to simulate retaking. See how your GPA would change under Florida/BCPS forgiveness policy.</p>
+
+                        <div class="fgs-forgiveness-no-eligible" id="fgs-forgiveness-no-eligible" style="display: none;">
+                            <div class="fgs-gpa-instruction">
+                                <p>No D or F semester grades found. Try showing 50+ rows on the Focus Grades page, or add a class manually below.</p>
+                            </div>
+                        </div>
+
+                        <div class="fgs-forgiveness-class-list" id="fgs-forgiveness-class-list">
+                            <!-- Eligible classes will be dynamically populated here -->
+                        </div>
+
+                        <div class="fgs-forgiveness-manual-add">
+                            <button class="fgs-forgiveness-add-manual-btn" id="fgs-forgiveness-add-manual">+ Add Class Manually</button>
+                        </div>
+
+                        <div class="fgs-forgiveness-results" id="fgs-forgiveness-results">
+                            <!-- Live results will be dynamically populated here -->
+                        </div>
+
+                        <div class="fgs-forgiveness-policy-note">
+                            <p><strong>How forgiveness works:</strong></p>
+                            <p><strong>Unweighted (State) GPA:</strong> Old D/F grade is removed, new grade (C or higher) replaces it.</p>
+                            <p><strong>Weighted (District) GPA:</strong> Old grade stays, new grade is added on top (both count).</p>
+                        </div>
+                    </div>
+                </div>
 
             </div>
 

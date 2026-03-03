@@ -297,15 +297,9 @@
                         if (gpaCalculator) gpaCalculator.style.display = 'flex';
                         if (settingsDropdown) settingsDropdown.style.display = 'none';
 
-                        // Call the full GPA calculator logic if available
-                        if (typeof extractClassData === 'function') {
-                                extractClassData();
-                        }
-                        if (typeof autoSelectClasses === 'function') {
-                                autoSelectClasses();
-                        }
-                        if (typeof showGPAStep === 'function') {
-                                showGPAStep(1);
+                        // Show the GPA mode selection sub-menu
+                        if (typeof showGPAModeSelect === 'function') {
+                                showGPAModeSelect();
                         }
 
                 } catch (error) {
@@ -743,7 +737,9 @@
 
                         // GPA Calculator buttons
                         safeAddGPAListener("fgs-gpa-back", "click", () => {
-                                window.showModeSelection();
+                                if (typeof showGPAModeSelect === 'function') {
+                                        showGPAModeSelect();
+                                }
                         });
 
                         safeAddGPAListener("fgs-gpa-back-to-classes", "click", () => {
@@ -1017,6 +1013,42 @@
                                         // Close the modal
                                         const modal = document.getElementById('fgs-gpa-manual-modal');
                                         if (modal) modal.style.display = 'none';
+                                }
+                        });
+
+                        // GPA mode selection sub-menu buttons
+                        safeAddGPAListener("fgs-gpa-mode-back", "click", () => {
+                                window.showModeSelection();
+                        });
+
+                        safeAddGPAListener("fgs-gpa-go-calc", "click", () => {
+                                if (typeof extractClassData === 'function') {
+                                        extractClassData();
+                                }
+                                if (typeof autoSelectClasses === 'function') {
+                                        autoSelectClasses();
+                                }
+                                if (typeof showGPAStep === 'function') {
+                                        showGPAStep(1);
+                                }
+                        });
+
+                        safeAddGPAListener("fgs-gpa-go-forgiveness", "click", () => {
+                                if (typeof showForgivenessPanel === 'function') {
+                                        showForgivenessPanel();
+                                }
+                        });
+
+                        safeAddGPAListener("fgs-forgiveness-back", "click", () => {
+                                if (typeof showGPAModeSelect === 'function') {
+                                        showGPAModeSelect();
+                                }
+                        });
+
+                        // Manual class addition for forgiveness
+                        safeAddGPAListener("fgs-forgiveness-add-manual", "click", () => {
+                                if (typeof addManualForgivenessClass === 'function') {
+                                        addManualForgivenessClass();
                                 }
                         });
 
