@@ -14,7 +14,7 @@ A Chrome extension that lets students simulate hypothetical assignments and inst
 
 ## Install
 
-Available on the [Chrome Web Store](https://chromewebstore.google.com/detail/focus-grade-calculator/kkgjbhcmfnlondneafpkagemnjpiomka).
+Available on the [Chrome Web Store](https://chromewebstore.google.com/detail/focus-grade-calculator/kgmcmnipeaiklodeglhndfiniojdaggo).
 
 ## How to Use
 
