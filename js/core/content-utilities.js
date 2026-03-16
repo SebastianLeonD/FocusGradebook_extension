@@ -37,6 +37,11 @@ let isInitialized = false;
 // Class monitoring globals
 let classChangeObserver = null;
 let lastDetectedClassValue = null;
+let classChangeTimeoutId = null;
+let classChangePollingId = null;
+
+// Dynamic column detection — maps column names to CSS selectors or header indices
+let columnIndexMap = null;
 
 /**
  * AUTO-DETECTION: Determines if current class is weighted or unweighted
@@ -65,15 +70,21 @@ function setupClassChangeMonitoring() {
     try {
         const classSelect = document.querySelector("select.student-gb-grades-course");
         if (!classSelect) return;
-        
+
         // Store initial value
         lastDetectedClassValue = classSelect.value;
-        
+
         // Remove existing listener if any
         if (classChangeObserver) {
             classChangeObserver.disconnect();
         }
-        
+
+        // Stop existing polling if any
+        if (classChangePollingId) {
+            clearInterval(classChangePollingId);
+            classChangePollingId = null;
+        }
+
         // Create mutation observer to watch for changes
         classChangeObserver = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
@@ -82,16 +93,27 @@ function setupClassChangeMonitoring() {
                 }
             });
         });
-        
+
         // Also add direct change listener
         classSelect.addEventListener('change', handleClassChange);
-        
+
         // Observe the select element
         classChangeObserver.observe(classSelect, {
             attributes: true,
             attributeFilter: ['value']
         });
-        
+
+        // Poll for programmatic class changes that don't fire events
+        classChangePollingId = setInterval(() => {
+            try {
+                const sel = document.querySelector("select.student-gb-grades-course");
+                if (!sel) return;
+                if (sel.value !== lastDetectedClassValue) {
+                    handleClassChange();
+                }
+            } catch (_) { /* silent */ }
+        }, 1500);
+
     } catch (error) {
         // Silent error handling for production
     }
@@ -115,41 +137,51 @@ function handleClassChange() {
         
         lastDetectedClassValue = newClassValue;
         
+        // Cancel any pending class change timeout from a previous rapid switch
+        if (classChangeTimeoutId) {
+            clearTimeout(classChangeTimeoutId);
+            classChangeTimeoutId = null;
+        }
+
         // Clear all hypotheticals and reset state
         hypotheticals = [];
         redoHistory = [];
         hypotheticalCount = 1;
         originalRowsByClass = {};
         originalCategoryData = {};
-        if (typeof editedScores !== "undefined") {
-                editedScores = {};
-        }
-        if (typeof originalScoreSnapshots !== "undefined") {
-                originalScoreSnapshots = {};
-        }
-        
-        // Remove hypothetical displays
+        actionHistory = [];
+        actionRedoHistory = [];
+        editedScores = {};
+        originalScoreSnapshots = {};
+        scoreEditHistory = [];
+        scoreRedoHistory = [];
+        fgsRowIdCounter = 0;
+
+        // Remove hypothetical displays and modified score markers
         clearDisplays();
         document.querySelectorAll(".hypothetical").forEach((e) => e.remove());
-        
+        document.querySelectorAll("[data-score-modified]").forEach((e) => e.removeAttribute("data-score-modified"));
+        document.querySelectorAll("[data-fgs-edit-bound]").forEach((e) => e.removeAttribute("data-fgs-edit-bound"));
+
         // Update current class ID
         currentClassId = newClassValue;
-        
-        // Re-detect class type
-        setTimeout(() => {
+
+        // Re-detect class type (with cancellation support)
+        classChangeTimeoutId = setTimeout(() => {
+            classChangeTimeoutId = null;
             mode = detectClassType();
-            
+            buildColumnIndexMap();
+
             // Reset popup to mode selection if it exists
             if (floatingPopup && floatingPopup.style.display !== "none") {
-                // Use the global showModeSelection function
                 if (typeof window.showModeSelection === 'function') {
                     window.showModeSelection();
                 }
             }
-            
+
             // Update color detection
             nextRowColor = getNextColorFromTable();
-            
+
         }, 1000); // Give time for Focus to load new class data
         
     } catch (error) {
@@ -284,5 +316,125 @@ function getDateTime() {
                 return now.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }) + " " + now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }).toLowerCase();
         } catch (error) {
                 return "Recent";
+        }
+}
+
+// ===========================================
+// DYNAMIC COLUMN DETECTION
+// ===========================================
+
+/**
+ * CSS-class and data-field selectors for Focus SIS table columns.
+ * These are position-independent and work regardless of which columns are enabled.
+ */
+const COLUMN_SELECTORS = {
+        assignment: { child: '.assignment-name-link' },
+        points:     { cls: 'td.points-cell' },
+        percent:    { cls: 'td.student-percent' },
+        grade:      { cls: 'td.student-letter' },
+        category:   { attr: 'td[data-field="category_title"]', altAttr: 'td[data-field="assignment_type_title"]' },
+        comment:    { attr: 'td[data-field="comment"]' },
+        resources:  { attr: 'td[data-field="resources"]' },
+        lastModified: { child: '[data-field="updated_at"]' }
+};
+
+/**
+ * Header text → column name mapping for fallback index-based detection.
+ * Keys are lowercased header text values from Focus <th> elements.
+ */
+const HEADER_TO_COLUMN = {
+        'assignment':    'assignment',
+        'points':        'points',
+        '%':             'percent',
+        'percent':       'percent',
+        'grade':         'grade',
+        'letter grade':  'grade',
+        'category':      'category',
+        'comment':       'comment',
+        'comments':      'comment',
+        'resources':     'resources',
+        'last modified': 'lastModified',
+        'assigned':      'assigned',
+        'due':           'due',
+        'last upload date': 'lastUpload',
+        'submit files':  'submitFiles'
+};
+
+/**
+ * Scans <th> headers once and builds a name → column-index map.
+ * Called at startup and on class change so the map stays current.
+ */
+function buildColumnIndexMap() {
+        try {
+                columnIndexMap = {};
+                const headers = document.querySelectorAll('.grades-grid.dataTable thead th');
+                headers.forEach((th, index) => {
+                        const text = th.textContent.trim().toLowerCase();
+                        const colName = HEADER_TO_COLUMN[text];
+                        if (colName && columnIndexMap[colName] === undefined) {
+                                columnIndexMap[colName] = index;
+                        }
+                });
+        } catch (error) {
+                columnIndexMap = {};
+        }
+}
+
+/**
+ * Returns the <td> for a given column name in a row, or null if the column is absent.
+ *
+ * Resolution order:
+ *   1. CSS class selector  (e.g. td.points-cell)
+ *   2. data-field attribute (e.g. td[data-field="category_title"])
+ *   3. Child element match  (e.g. .assignment-name-link → parent td)
+ *   4. Header-index fallback from columnIndexMap
+ *   5. null — caller MUST guard with `if (cell)`
+ *
+ * @param {HTMLElement} row - A <tr> element
+ * @param {string} columnName - One of: assignment, points, percent, grade, category, comment, resources, lastModified
+ * @returns {HTMLElement|null}
+ */
+function getCell(row, columnName) {
+        try {
+                if (!row || !columnName) return null;
+                const spec = COLUMN_SELECTORS[columnName];
+
+                // 1. CSS class selector
+                if (spec?.cls) {
+                        const cell = row.querySelector(spec.cls);
+                        if (cell) return cell;
+                }
+
+                // 2. data-field attribute selector
+                if (spec?.attr) {
+                        const cell = row.querySelector(spec.attr);
+                        if (cell) return cell;
+                }
+
+                // 2b. Alternate data-field attribute selector
+                if (spec?.altAttr) {
+                        const cell = row.querySelector(spec.altAttr);
+                        if (cell) return cell;
+                }
+
+                // 3. Child element → parent <td>
+                if (spec?.child) {
+                        const child = row.querySelector(spec.child);
+                        if (child) {
+                                const td = child.closest('td');
+                                if (td && td.closest('tr') === row) return td;
+                        }
+                }
+
+                // 4. Header-index fallback
+                if (columnIndexMap && columnIndexMap[columnName] !== undefined) {
+                        const tds = row.querySelectorAll('td');
+                        const idx = columnIndexMap[columnName];
+                        if (idx < tds.length) return tds[idx];
+                }
+
+                return null;
+        } catch (error) {
+                return null;
         }
 }

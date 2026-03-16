@@ -22,6 +22,11 @@ let lastClassKey = null;  // Track the last class to detect switches
 let scoreEditHistory = [];  // Track score edit history for undo
 let scoreRedoHistory = [];  // Track undone score edits for redo
 let calculateDebounceTimer = null;  // Debounce timer for calculate()
+let fgsRowIdCounter = 0;  // Monotonic counter for position-independent row IDs
+
+function getRowId(el) {
+	return el.getAttribute("data-original-row-id") || el.getAttribute("data-fgs-row-id");
+}
 
 const EXCLUDED_SCORE_PATTERNS = [
     /^NG/i,           // NG or NG / 100
@@ -72,6 +77,99 @@ function showToast(message, type = 'error', duration = 4000) {
     setTimeout(dismiss, duration);
 }
 
+/**
+ * Shows an inline confirmation bar (replaces native confirm()).
+ * Renders Yes/No buttons inside the target cell or as a toast-style bar.
+ */
+function showInlineConfirm(message, onYes) {
+    // Remove any existing confirm bar
+    const existing = document.getElementById('fgs-inline-confirm');
+    if (existing) existing.remove();
+
+    const bar = document.createElement('div');
+    bar.id = 'fgs-inline-confirm';
+    bar.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:2147483647;background:#1e1e2e;color:#f0f0f0;padding:10px 14px;border-radius:6px;border-left:4px solid #f39c12;font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;max-width:400px;box-shadow:0 4px 12px rgba(0,0,0,0.3);display:flex;align-items:center;gap:10px;';
+
+    const msg = document.createElement('span');
+    msg.textContent = message;
+    msg.style.cssText = 'flex:1;';
+
+    const yesBtn = document.createElement('button');
+    yesBtn.textContent = 'Yes';
+    yesBtn.style.cssText = 'background:#28a745;color:white;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:12px;font-weight:600;';
+
+    const noBtn = document.createElement('button');
+    noBtn.textContent = 'No';
+    noBtn.style.cssText = 'background:#6c757d;color:white;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:12px;font-weight:600;';
+
+    const dismiss = () => { bar.style.opacity = '0'; setTimeout(() => bar.remove(), 200); };
+    yesBtn.addEventListener('click', () => { dismiss(); onYes(); });
+    noBtn.addEventListener('click', dismiss);
+
+    bar.appendChild(msg);
+    bar.appendChild(yesBtn);
+    bar.appendChild(noBtn);
+    document.body.appendChild(bar);
+
+    // Auto-dismiss after 8 seconds
+    setTimeout(() => { if (bar.parentNode) dismiss(); }, 8000);
+}
+
+/**
+ * Shows an inline prompt bar (replaces native prompt()).
+ * Renders an input + OK/Cancel as a toast-style bar.
+ */
+function showInlinePrompt(message, onSubmit) {
+    const existing = document.getElementById('fgs-inline-prompt');
+    if (existing) existing.remove();
+
+    const bar = document.createElement('div');
+    bar.id = 'fgs-inline-prompt';
+    bar.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:2147483647;background:#1e1e2e;color:#f0f0f0;padding:12px 14px;border-radius:6px;border-left:4px solid #3498db;font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;max-width:420px;box-shadow:0 4px 12px rgba(0,0,0,0.3);display:flex;flex-direction:column;gap:8px;';
+
+    const msg = document.createElement('span');
+    msg.textContent = message;
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;';
+
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '1';
+    input.step = '1';
+    input.placeholder = 'e.g. 100';
+    input.style.cssText = 'flex:1;padding:5px 8px;border:1px solid #555;border-radius:4px;background:#2a2a3e;color:#f0f0f0;font-size:13px;outline:none;width:80px;';
+
+    const okBtn = document.createElement('button');
+    okBtn.textContent = 'OK';
+    okBtn.style.cssText = 'background:#3498db;color:white;border:none;border-radius:4px;padding:4px 14px;cursor:pointer;font-size:12px;font-weight:600;';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'background:#6c757d;color:white;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600;';
+
+    const dismiss = () => { bar.style.opacity = '0'; setTimeout(() => bar.remove(), 200); };
+    okBtn.addEventListener('click', () => {
+        const val = input.value.trim();
+        dismiss();
+        onSubmit(val || null);
+    });
+    cancelBtn.addEventListener('click', () => { dismiss(); onSubmit(null); });
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); okBtn.click(); }
+        else if (e.key === 'Escape') { e.preventDefault(); cancelBtn.click(); }
+    });
+
+    row.appendChild(input);
+    row.appendChild(okBtn);
+    row.appendChild(cancelBtn);
+    bar.appendChild(msg);
+    bar.appendChild(row);
+    document.body.appendChild(bar);
+
+    setTimeout(() => input.focus(), 50);
+}
+
 function getEditorCellCSS(height) {
     return `padding: 4px 8px; text-align: left; vertical-align: middle; height: ${height}px; max-height: ${height}px; overflow: visible; box-sizing: border-box;`;
 }
@@ -118,7 +216,7 @@ function parseScoreCell(row, scoreCell) {
             wasExcluded: false
         };
         
-        const nameCell = row.querySelector("td:nth-child(2)");
+        const nameCell = getCell(row, 'assignment');
         if (nameCell && nameCell.hasAttribute("data-assignment-info")) {
             try {
                 const assignmentData = JSON.parse(nameCell.getAttribute("data-assignment-info"));
@@ -131,7 +229,7 @@ function parseScoreCell(row, scoreCell) {
             } catch (error) {
             }
         }
-        
+
         const clonedCell = scoreCell.cloneNode(true);
         const buttons = clonedCell.querySelectorAll("button");
         buttons.forEach((btn) => btn.remove());
@@ -226,18 +324,7 @@ function applySnapshotToCell(cell, snapshot) {
     } else if (typeof snapshot.text === "string") {
         cell.textContent = snapshot.text;
     }
-    cell.style.cursor = "pointer";
-    cell.style.backgroundColor = "";
-    cell.style.padding = "";
-    cell.style.textAlign = "";
-    cell.style.height = "";
-    cell.style.maxHeight = "";
-    cell.style.lineHeight = "";
-    cell.style.fontSize = "";
-    cell.style.whiteSpace = "";
-    cell.style.overflow = "";
-    cell.style.verticalAlign = "";
-    cell.style.boxSizing = "";
+    cell.style.cssText = "cursor:pointer;";
     cell.title = "Click to edit score";
     cell.removeAttribute("data-score-modified");
 }
@@ -273,22 +360,19 @@ function handleAdd() {
             return;
         }
 
-        // Warn if Focus didn't load the Points column (grades will be inaccurate)
-        const pointsHeaders = document.querySelectorAll('.grades-grid.dataTable thead th');
-        let hasPointsColumn = false;
-        for (const h of pointsHeaders) {
-            if (h.textContent.trim() === 'Points') { hasPointsColumn = true; break; }
+        const parsedEarned = parseFloat(earned);
+        const parsedTotal = parseFloat(total);
+        if (isNaN(parsedEarned) || isNaN(parsedTotal) || parsedTotal < 0 || parsedEarned < 0) {
+            showToast("Please enter valid numbers for earned and total points.", "warning");
+            return;
         }
-        if (!hasPointsColumn) {
-            showToast('No Points column detected — grades may be inaccurate. Try going to the home page, opening a class that has the Points column, then switching to this class from the dropdown.', 'warning', 6000);
-        }
-        
-        const data = { 
-            earned: parseFloat(earned), 
-            total: parseFloat(total), 
-            category: category, 
-            name: name, 
-            classKey: getCurrentClassKey() 
+
+        const data = {
+            earned: parsedEarned,
+            total: parsedTotal,
+            category: category,
+            name: name,
+            classKey: getCurrentClassKey()
         };
         
         // Use smart color detection
@@ -316,7 +400,7 @@ function handleAdd() {
         }, 200);
         
     } catch (error) {
-        console.error("ADD OPERATION - Error:", error);
+        /* silent */
     }
 }
     
@@ -343,7 +427,7 @@ function calculate() {
                         calculateUnweighted();
                 }
         } catch (error) {
-                console.error("Error in calculate:", error);
+                /* silent */
         }
     }
 
@@ -494,7 +578,7 @@ function calculate() {
         updateCategoryCells(categoryMap);
         showWeightedGrade(finalPercent, getLetterGrade(finalPercent));
     } catch (error) {
-        console.error("Error in calculateWeighted:", error);
+        /* silent */
     }
         }
     
@@ -582,9 +666,9 @@ function calculate() {
             try {
                 if (row.classList.contains("hypothetical") && row.getAttribute("data-class-id") !== currentClassId) return;
                 
-                const tds = row.querySelectorAll("td");
-                if (tds.length < 11) return;
-                const raw = (tds[2]?.innerText || "").split("/").map((s) => s.trim());
+                const pointsCell = getCell(row, 'points');
+                if (!pointsCell) return;
+                const raw = (pointsCell.innerText || "").split("/").map((s) => s.trim());
                 
                 const assumedRowId = row.getAttribute("data-original-row-id") ||
                     (row.classList.contains("hypothetical")
@@ -648,7 +732,7 @@ function calculate() {
         
         showGrade(finalPercent, getLetterGrade(finalPercent));
     } catch (error) {
-        console.error("Error in calculateUnweighted:", error);
+        /* silent */
     }
 }
     
@@ -746,19 +830,16 @@ function addRow(data) {
                 
                 const earned = data.earned;
                 const total = data.total;
-                const percent = total === 0 && earned > 0 ? 100 : Math.round((earned / total) * 100);
+                const percent = total > 0 ? Math.round((earned / total) * 100) : (earned > 0 ? 100 : 0);
                 const letter = getLetterGrade(percent);
-                const tds = clone.querySelectorAll("td");
-                if (tds.length >= 11) {
-                        const scoreCellClone = tds[2];
-                        if (scoreCellClone) {
-                                scoreCellClone.removeAttribute("data-fgs-edit-bound");
-                                scoreCellClone.removeAttribute("data-score-modified");
-                        }
-                        const assignmentName = data.name && data.name.trim() !== "" ? data.name : `Hypothetical ${hypotheticalCount++}`;
-                        
-                        // Create assignment name cell with proper structure
-                        const nameCell = tds[1];
+                const scoreCellClone = getCell(clone, 'points');
+                const nameCell = getCell(clone, 'assignment');
+                if (!scoreCellClone || !nameCell) return;
+
+                scoreCellClone.removeAttribute("data-fgs-edit-bound");
+                scoreCellClone.removeAttribute("data-score-modified");
+
+                const assignmentName = data.name && data.name.trim() !== "" ? data.name : `Hypothetical ${hypotheticalCount++}`;
                         
                         // Create clickable blue link for assignment name
                         const assignmentLink = document.createElement('a');
@@ -856,23 +937,24 @@ function addRow(data) {
                                 deleteButton.style.transform = 'scale(0.8)';
                         });
                         
-                        tds[9].textContent = data.category || "";
-                        tds[2].textContent = `${earned} / ${total}`;
-                        tds[3].textContent = `${percent}%`;
-                        tds[4].textContent = letter;
-                        tds[5].textContent = "";
-                        tds[8].textContent = getDateTime();
-                }
-                
+                        const categoryCell = getCell(clone, 'category');
+                        if (categoryCell) categoryCell.textContent = data.category || "";
+                        scoreCellClone.textContent = `${earned} / ${total}`;
+                        const percentCellClone = getCell(clone, 'percent');
+                        if (percentCellClone) percentCellClone.textContent = `${percent}%`;
+                        const gradeCellClone = getCell(clone, 'grade');
+                        if (gradeCellClone) gradeCellClone.textContent = letter;
+                        const commentCellClone = getCell(clone, 'comment');
+                        if (commentCellClone) commentCellClone.textContent = "";
+                        const lastModCellClone = getCell(clone, 'lastModified');
+                        if (lastModCellClone) lastModCellClone.textContent = getDateTime();
+
                 clone.style.backgroundColor = nextRowColor;
                 
                 setTimeout(() => {
-                const scoreCell = clone.querySelector("td:nth-child(3)");
-                if (scoreCell && typeof makeScoresEditable === 'function') {
-                        // The score cell will be automatically made editable when makeScoresEditable runs
-                        // But we can ensure it has the right structure
-                        scoreCell.style.cursor = "pointer";
-                        scoreCell.title = "Click to edit score";
+                if (scoreCellClone && typeof makeScoresEditable === 'function') {
+                        scoreCellClone.style.cursor = "pointer";
+                        scoreCellClone.title = "Click to edit score";
                 }
                 }, 100);
 
@@ -881,7 +963,7 @@ function addRow(data) {
                 // Update nextRowColor for the next addition
                 nextRowColor = getNextColorFromTable();
         } catch (error) {
-                console.error("ADD ROW OPERATION - Error:", error);
+                /* silent */
         }
 }
 /**
@@ -898,10 +980,10 @@ function deleteSpecificAssignment(rowId) {
                 }
                 
                 // METHOD 1: Try to get assignment data from data attribute (most reliable)
-                const nameCell = rowElement.querySelector("td:nth-child(2)");
+                const nameCell = getCell(rowElement, 'assignment');
                 let earned = null;
                 let total = null;
-                
+
                 if (nameCell && nameCell.hasAttribute('data-assignment-info')) {
                         try {
                                 const assignmentData = JSON.parse(nameCell.getAttribute('data-assignment-info'));
@@ -910,10 +992,10 @@ function deleteSpecificAssignment(rowId) {
                         } catch (e) {
                         }
                 }
-                
+
                 // METHOD 2: Fallback to parsing the score cell
                 if (earned === null || total === null) {
-                        const scoreCell = rowElement.querySelector("td:nth-child(3)");
+                        const scoreCell = getCell(rowElement, 'points');
                         
                         if (!scoreCell) {
                                 return;
@@ -978,11 +1060,20 @@ function deleteSpecificAssignment(rowId) {
                                                 nextRowColor: nextRowColor
                                         });
 
+                                        // Capture modified values if the score was edited
+                                        const savedAssignment = { ...lastAssignment };
+                                        const deletedRowId1 = getRowId(rowElement);
+                                        if (deletedRowId1 && editedScores[deletedRowId1]) {
+                                                const edit = editedScores[deletedRowId1];
+                                                if (Number.isFinite(edit.modifiedEarned)) savedAssignment.earned = edit.modifiedEarned;
+                                                if (Number.isFinite(edit.modifiedTotal)) savedAssignment.total = edit.modifiedTotal;
+                                        }
+
                                         // Add to unified action history
                                         actionHistory.push({
                                                 type: 'deleteHypothetical',
                                                 classKey: classKey,
-                                                deletedAssignment: { ...lastAssignment },
+                                                deletedAssignment: savedAssignment,
                                                 timestamp: Date.now()
                                         });
                                         actionRedoHistory = actionRedoHistory.filter(a => a.classKey !== classKey);
@@ -991,12 +1082,12 @@ function deleteSpecificAssignment(rowId) {
                                         rowElement.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
                                         rowElement.style.transform = 'translateX(-100%)';
                                         rowElement.style.opacity = '0';
-                                        
+
                                         setTimeout(() => {
                                                 rowElement.remove();
 
                                                 // Clean up score edit history for this row
-                                                const deletedRowId = rowElement.getAttribute("data-original-row-id") || rowElement.getAttribute("data-fgs-row-id");
+                                                const deletedRowId = deletedRowId1;
                                                 if (deletedRowId) {
                                                         scoreEditHistory = scoreEditHistory.filter(e => e.rowId !== deletedRowId);
                                                         scoreRedoHistory = scoreRedoHistory.filter(r => r.rowId !== deletedRowId);
@@ -1068,14 +1159,23 @@ function deleteSpecificAssignment(rowId) {
                 }
                 
                 const deletedAssignment = hypotheticals[assignmentIndex];
-                
+
+                // Capture modified values if the score was edited before deletion
+                const savedAssignment = { ...deletedAssignment };
+                const deletedRowId = getRowId(rowElement);
+                if (deletedRowId && editedScores[deletedRowId]) {
+                        const edit = editedScores[deletedRowId];
+                        if (Number.isFinite(edit.modifiedEarned)) savedAssignment.earned = edit.modifiedEarned;
+                        if (Number.isFinite(edit.modifiedTotal)) savedAssignment.total = edit.modifiedTotal;
+                }
+
                 // Get all rows above the deleted row for color flipping
                 const table = document.querySelector(".grades-grid.dataTable tbody");
                 const allRows = Array.from(table.querySelectorAll("tr"));
                 const deletedRowIndex = allRows.indexOf(rowElement);
                 const rowsAbove = allRows.slice(0, deletedRowIndex);
-                
-                
+
+
                 // Remove from hypotheticals array
                 hypotheticals.splice(assignmentIndex, 1);
 
@@ -1090,23 +1190,22 @@ function deleteSpecificAssignment(rowId) {
                 actionHistory.push({
                         type: 'deleteHypothetical',
                         classKey: classKey,
-                        deletedAssignment: { ...deletedAssignment },
+                        deletedAssignment: savedAssignment,
                         timestamp: Date.now()
                 });
 
                 // Clear redo history since a new action was taken
                 actionRedoHistory = actionRedoHistory.filter(a => a.classKey !== classKey);
-                
+
                 // Remove the row element with smooth animation
                 rowElement.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
                 rowElement.style.transform = 'translateX(-100%)';
                 rowElement.style.opacity = '0';
-                
+
                 setTimeout(() => {
                         rowElement.remove();
 
                         // Clean up score edit history for this row
-                        const deletedRowId = rowElement.getAttribute("data-original-row-id") || rowElement.getAttribute("data-fgs-row-id");
                         if (deletedRowId) {
                                 // Remove from edit history
                                 scoreEditHistory = scoreEditHistory.filter(e => e.rowId !== deletedRowId);
@@ -1144,8 +1243,6 @@ function deleteSpecificAssignment(rowId) {
 
                         if (remainingHypotheticals.length > 0 || hasScoreEdits) {
                                 calculate();
-                                if (remainingHypotheticals.length === 0 && hasScoreEdits) {
-                                }
                         } else {
                                 clearDisplays();
                                 if (mode === "weighted") {
@@ -1159,7 +1256,7 @@ function deleteSpecificAssignment(rowId) {
                 
                 
         } catch (error) {
-                console.error("DELETE SPECIFIC - Error:", error);
+                /* silent */
         }
 }
 
@@ -1178,8 +1275,8 @@ function makeScoresEditable() {
         }
         
         rows.forEach((row, index) => {
-            const scoreCell = row.querySelector("td:nth-child(3)"); // The score column (X/Y)
-            const percentCell = row.querySelector("td:nth-child(4)"); // The percentage column
+            const scoreCell = getCell(row, 'points');
+            const percentCell = getCell(row, 'percent');
             if (!scoreCell) return;
 
             // Skip rows that already have edit listeners bound to prevent duplicates
@@ -1192,7 +1289,7 @@ function makeScoresEditable() {
             const hypoIdentifier = row.getAttribute("data-fgs-row-id") || index;
             const rowId = existingRowId || (isHypothetical
                 ? `hypothetical-row-${hypoIdentifier}`
-                : `original-row-${index}`);
+                : `original-row-${fgsRowIdCounter++}`);
 
             if (!existingRowId) {
                 row.setAttribute("data-original-row-id", rowId);
@@ -1230,10 +1327,9 @@ function makeScoresEditable() {
                     e.preventDefault();
                     e.stopPropagation();
 
-                    const confirmReset = confirm("Reset this score back to original?");
-                    if (confirmReset) {
+                    showInlineConfirm("Reset this score back to original?", () => {
                         resetSingleScore(rowId, scoreCell);
-                    }
+                    });
                 }
             });
 
@@ -1275,17 +1371,16 @@ function makeScoresEditable() {
                             e.preventDefault();
                             e.stopPropagation();
 
-                            const confirmReset = confirm("Reset this percentage back to original?");
-                            if (confirmReset) {
+                            showInlineConfirm("Reset this percentage back to original?", () => {
                                 resetSingleScore(rowId, scoreCell);
-                            }
+                            });
                         }
                     });
                 }
             }
 
             // Make letter grade cell clickable and editable (only if total points > 0)
-            const letterCell = row.querySelector("td:nth-child(5)"); // The letter grade column
+            const letterCell = getCell(row, 'grade');
             if (letterCell) {
                 // Check if assignment has 0 total points
                 const scoreText = scoreCell.textContent.trim();
@@ -1323,10 +1418,9 @@ function makeScoresEditable() {
                             e.preventDefault();
                             e.stopPropagation();
 
-                            const confirmReset = confirm("Reset this letter grade back to original?");
-                            if (confirmReset) {
+                            showInlineConfirm("Reset this letter grade back to original?", () => {
                                 resetSingleScore(rowId, scoreCell);
-                            }
+                            });
                         }
                     });
                 }
@@ -1335,7 +1429,7 @@ function makeScoresEditable() {
         });
 
     } catch (error) {
-        console.error("SCORE EDIT - Error:", error);
+        /* silent */
     }
 }
 
@@ -1350,7 +1444,7 @@ function openScoreEditor(cell, rowId, row) {
         const classKey = getCurrentClassKey();
 
         // IMPORTANT: Store original letter grade HTML if not already stored
-        const letterCell = row.querySelector("td:nth-child(5)");
+        const letterCell = getCell(row, 'grade');
         if (letterCell && !letterCell.getAttribute("data-original-letter-html")) {
             letterCell.setAttribute("data-original-letter-html", letterCell.innerHTML);
             letterCell.setAttribute("data-original-letter-text", letterCell.textContent.trim());
@@ -1441,45 +1535,76 @@ function openScoreEditor(cell, rowId, row) {
             
             if (wasExcluded && (totalPoints === null || isNaN(totalPoints))) {
                 const promptText = (baseSnapshot?.text || currentText || "").trim() || "this assignment";
-                const userTotal = prompt(
-                    `This assignment (${promptText}) doesn't have a point value.\n\n` +
-                    `Enter the total points possible for this assignment:\n` +
-                    `(This will be the denominator, like the "100" in "85/100")`
+                showInlinePrompt(
+                    `"${promptText}" has no point value. Enter total points possible:`,
+                    (userTotal) => {
+                        if (userTotal === null || userTotal.trim() === "") return;
+                        const parsedTotal = parseFloat(userTotal);
+                        if (isNaN(parsedTotal) || parsedTotal <= 0) {
+                            showToast("Invalid point value. Please enter a number greater than 0.", "error");
+                            return;
+                        }
+                        continueOpenEditor(cell, rowId, row, originalEarned, parsedTotal, wasExcluded, baseSnapshot, classKey);
+                    }
                 );
-                
-                if (userTotal === null || userTotal.trim() === "") {
-                    return;
-                }
-                
-                const parsedTotal = parseFloat(userTotal);
-                if (isNaN(parsedTotal) || parsedTotal <= 0) {
-                    showToast("Invalid point value. Please enter a number greater than 0.", "error");
-                    return;
-                }
-                
-                totalPoints = parsedTotal;
+                return;
             }
-            
+
             if (originalEarned === null || totalPoints === null) {
                 showToast("This assignment uses a special scoring format and cannot be edited directly.", "info");
                 return;
             }
-            
+
         } // End of else block (first time editing)
-        
+
+        continueOpenEditor(cell, rowId, row, originalEarned, totalPoints, wasExcluded, baseSnapshot, classKey);
+
+    } catch (error) {
+        showToast("Error opening editor: " + error.message, "error");
+    }
+}
+
+/**
+ * Continuation of openScoreEditor after total points are resolved.
+ * Extracted to support async inline prompt for excluded assignments.
+ */
+function continueOpenEditor(cell, rowId, row, originalEarned, totalPoints, wasExcluded, baseSnapshot, classKey) {
+    try {
         // Store original if not already edited (only on first edit)
         const originalCellHTML = baseSnapshot?.html ?? cell.innerHTML;
         const originalCellText = baseSnapshot?.text ?? cell.textContent.trim();
         
         if (!editedScores[rowId]) {
+            // Store category at edit time so we don't need the DOM row later
+            const catCell = getCell(row, 'category');
+            let storedCategory = catCell ? catCell.textContent.trim() : "";
+            if (!storedCategory) {
+                const aCell = getCell(row, 'assignment');
+                if (aCell && aCell.hasAttribute('data-assignment-info')) {
+                    try { storedCategory = JSON.parse(aCell.getAttribute('data-assignment-info')).category || ""; } catch (_) {}
+                }
+            }
+            // Last resort: scan row cells for text matching a known weighted category
+            if (!storedCategory && mode === "weighted") {
+                const knownCategories = extractCategories().map(c => c.toLowerCase());
+                const cells = row.querySelectorAll("td");
+                for (const td of cells) {
+                    const txt = td.textContent.trim().toLowerCase();
+                    if (txt && knownCategories.includes(txt)) {
+                        storedCategory = td.textContent.trim();
+                        break;
+                    }
+                }
+            }
             editedScores[rowId] = {
                 originalHTML: originalCellHTML,
                 original: originalCellText || `${originalEarned} / ${totalPoints}`,
                 originalEarned: parseFloat(originalEarned),
                 total: parseFloat(totalPoints),
                 row: row,
-                wasExcluded: wasExcluded,  // Store if originally excluded
-                classKey: classKey
+                wasExcluded: wasExcluded,
+                classKey: classKey,
+                category: storedCategory
             };
         } else if (!editedScores[rowId].classKey) {
             editedScores[rowId].classKey = classKey;
@@ -1559,7 +1684,6 @@ function openScoreEditor(cell, rowId, row) {
         
 
     } catch (error) {
-        console.error("SCORE EDIT - Error:", error);
         showToast("Error opening editor: " + error.message, "error");
     }
 }
@@ -1571,15 +1695,38 @@ function openScoreEditor(cell, rowId, row) {
 function getModifiedScores() {
     try {
         const modifications = [];
-        
+        const cachedCategories = mode === "weighted" ? extractCategories().map(c => c.toLowerCase()) : [];
+
         Object.keys(editedScores).forEach(rowId => {
             const editData = editedScores[rowId];
             if (!editData.modified) return;
-            
-            const row = editData.row;
-            const categoryCell = row.querySelector("td:nth-child(10)");
-            const category = categoryCell ? 
-                categoryCell.textContent.trim() : "";
+
+            // Use stored category first (captured at edit time), DOM as fallback
+            let category = editData.category || "";
+            if (!category) {
+                const row = editData.row && editData.row.parentNode ? editData.row : document.querySelector(`[data-original-row-id="${rowId}"]`);
+                if (row) {
+                    const categoryCell = getCell(row, 'category');
+                    category = categoryCell ? categoryCell.textContent.trim() : "";
+                    if (!category) {
+                        const assignmentCell = getCell(row, 'assignment');
+                        if (assignmentCell && assignmentCell.hasAttribute('data-assignment-info')) {
+                            try { category = JSON.parse(assignmentCell.getAttribute('data-assignment-info')).category || ""; } catch (_) {}
+                        }
+                    }
+                    // Last resort: scan all <td> cells for text matching a known weighted category
+                    if (!category && cachedCategories.length > 0) {
+                        const cells = row.querySelectorAll("td");
+                        for (const td of cells) {
+                            const txt = td.textContent.trim().toLowerCase();
+                            if (txt && cachedCategories.includes(txt)) {
+                                category = td.textContent.trim();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
             
             // Parse original values
             const originalEarnedRaw = typeof editData.originalEarned === "number"
@@ -1615,12 +1762,14 @@ function getModifiedScores() {
             if (!Number.isFinite(modifiedTotal)) {
                 modifiedTotal = originalTotalRaw;
             }
+            // Z scores: Focus already counts the denominator in the grade total.
+            // Since Z is treated as excluded (wasExcluded=true), the excluded path
+            // would add both earned AND total. Zero out modifiedTotal so only the
+            // new earned value is added — the denominator is already in the total.
             const forceKeepOriginalDenominator = originalTextValue.trim().toUpperCase().startsWith('Z');
             if (forceKeepOriginalDenominator) {
                 modifiedTotal = 0;
             }
-            
-            
             modifications.push({
                 originalEarned,
                 originalTotal,
@@ -1634,7 +1783,7 @@ function getModifiedScores() {
         
         return modifications;
     } catch (error) {
-        console.error("SCORE EDIT - Error getting modifications:", error);
+        /* silent */
         return [];
     }
 }
@@ -1694,8 +1843,8 @@ function saveScoreEdit(cell, rowId, newEarned, totalPoints) {
         buildModifiedScoreCellUI(cell, earnedNum, totalNum, rowId);
 
         // Update the percentage cell as well
-        const row = editMeta.row;
-        const percentCell = row.querySelector("td:nth-child(4)");
+        const row = editMeta.row && editMeta.row.parentNode ? editMeta.row : document.querySelector(`[data-original-row-id="${rowId}"]`);
+        const percentCell = getCell(row, 'percent');
         if (percentCell && totalNum > 0) {
             const calculatedPercent = (earnedNum / totalNum) * 100;
             updatePercentageCell(percentCell, calculatedPercent, rowId);
@@ -1705,7 +1854,7 @@ function saveScoreEdit(cell, rowId, newEarned, totalPoints) {
         }
 
         // Update the letter grade cell as well
-        const letterCell = row.querySelector("td:nth-child(5)");
+        const letterCell = getCell(row, 'grade');
         if (letterCell && totalNum > 0) {
             const calculatedPercent = (earnedNum / totalNum) * 100;
             const letterGrade = getLetterGrade(Math.round(calculatedPercent));
@@ -1722,7 +1871,7 @@ function saveScoreEdit(cell, rowId, newEarned, totalPoints) {
         debouncedCalculate();
 
     } catch (error) {
-        console.error("SCORE EDIT - Error saving:", error);
+        /* silent */
         restoreOriginalScore(cell, rowId);
     }
 }
@@ -1754,16 +1903,16 @@ function checkAndRestoreOriginal(editMeta, earnedPoints, totalPoints, scoreCell,
     if (sameEarned && sameTotal && !editMeta.wasExcluded) {
         applySnapshotToCell(scoreCell, { html: editMeta.originalHTML, text: editMeta.original });
 
-        const row = editMeta.row;
+        const row = editMeta.row && editMeta.row.parentNode ? editMeta.row : scoreCell.closest("tr");
         if (row) {
-            const percentCell = row.querySelector("td:nth-child(4)");
+            const percentCell = getCell(row, 'percent');
             if (percentCell) {
                 restoreOriginalPercentage(percentCell, rowId);
                 percentCell.removeAttribute("data-original-percent-html");
                 percentCell.removeAttribute("data-original-percent-text");
             }
 
-            const letterCell = row.querySelector("td:nth-child(5)");
+            const letterCell = getCell(row, 'grade');
             if (letterCell) {
                 restoreOriginalLetterGrade(letterCell, rowId);
                 letterCell.removeAttribute("data-original-letter-html");
@@ -1784,7 +1933,7 @@ function checkAndRestoreOriginal(editMeta, earnedPoints, totalPoints, scoreCell,
         const sameAsModified = nearlyEqual(Number(editMeta.modifiedEarned), earnedPoints) &&
                                nearlyEqual(Number(editMeta.modifiedTotal || editMeta.total), totalPoints);
         if (sameAsModified) {
-            rebuildModifiedScoreCell(scoreCell, rowId, earnedPoints, totalPoints);
+            buildModifiedScoreCellUI(scoreCell, earnedPoints, totalPoints, rowId);
             return true;
         }
     }
@@ -1938,7 +2087,7 @@ function openPercentageEditor(percentCell, scoreCell, rowId, row) {
         }
 
         // IMPORTANT: Store original letter grade HTML if not already stored
-        const letterCell = row.querySelector("td:nth-child(5)");
+        const letterCell = getCell(row, 'grade');
         if (letterCell && !letterCell.getAttribute("data-original-letter-html")) {
             letterCell.setAttribute("data-original-letter-html", letterCell.innerHTML);
             letterCell.setAttribute("data-original-letter-text", letterCell.textContent.trim());
@@ -2027,7 +2176,6 @@ function openPercentageEditor(percentCell, scoreCell, rowId, row) {
 
 
     } catch (error) {
-        console.error("PERCENT EDIT - Error:", error);
         showToast("Error opening percentage editor: " + error.message, "error");
     }
 }
@@ -2111,7 +2259,7 @@ function savePercentageEdit(percentCell, scoreCell, rowId, percentInput, row) {
         updatePercentageCell(percentCell, percentValue, rowId);
 
         // Update the letter grade cell as well
-        const letterCell = row.querySelector("td:nth-child(5)");
+        const letterCell = getCell(row, 'grade');
         if (letterCell) {
             const letterGrade = getLetterGrade(Math.round(percentValue));
             updateLetterGradeCell(letterCell, letterGrade, rowId);
@@ -2124,7 +2272,7 @@ function savePercentageEdit(percentCell, scoreCell, rowId, percentInput, row) {
         debouncedCalculate();
 
     } catch (error) {
-        console.error("PERCENT EDIT - Error saving:", error);
+        /* silent */
         restoreOriginalPercentage(percentCell, rowId);
     }
 }
@@ -2247,7 +2395,6 @@ function openLetterGradeEditor(letterCell, scoreCell, percentCell, rowId, row) {
 
 
     } catch (error) {
-        console.error("LETTER EDIT - Error:", error);
         showToast("Error opening letter grade editor: " + error.message, "error");
     }
 }
@@ -2363,7 +2510,7 @@ function saveLetterGradeEdit(letterCell, scoreCell, percentCell, rowId, letterIn
         debouncedCalculate();
 
     } catch (error) {
-        console.error("LETTER EDIT - Error saving:", error);
+        /* silent */
         restoreOriginalLetterGrade(letterCell, rowId);
     }
 }
@@ -2429,22 +2576,22 @@ function restoreOriginalScore(cell, rowId) {
         
         if (!editData && !snapshot) {
             const rowElement = cell?.closest("tr") || document.querySelector(`[data-original-row-id="${rowId}"]`);
-            const scoreCell = rowElement?.querySelector("td:nth-child(3)");
+            const scoreCell = rowElement ? getCell(rowElement, 'points') : null;
             if (rowElement && scoreCell) {
                 snapshot = captureOriginalScoreSnapshot(rowElement, scoreCell, rowId);
             }
         }
-        
+
         if (!editData && !snapshot) {
             return;
         }
-        
+
         const sourceData = editData
             ? { html: editData.originalHTML, text: editData.original }
             : snapshot;
-        
+
         const rowElement = cell?.closest("tr") || editData?.row || document.querySelector(`[data-original-row-id="${rowId}"]`);
-        const appliedSnapshot = sourceData || (rowElement ? captureOriginalScoreSnapshot(rowElement, rowElement.querySelector("td:nth-child(3)") || cell, rowId) : null);
+        const appliedSnapshot = sourceData || (rowElement ? captureOriginalScoreSnapshot(rowElement, getCell(rowElement, 'points') || cell, rowId) : null);
         
         applySnapshotToCell(cell, appliedSnapshot);
 
@@ -2453,51 +2600,6 @@ function restoreOriginalScore(cell, rowId) {
     }
 }
 
-/**
- * Rebuilds the modified score cell display without pushing to history.
- * Used when an editor is dismissed without changing the value.
- */
-function rebuildModifiedScoreCell(cell, rowId, earnedNum, totalNum) {
-    try {
-        const originalHeight = cell.offsetHeight;
-        while (cell.firstChild) cell.removeChild(cell.firstChild);
-        cell.style.cssText = getEditorCellCSS(originalHeight) + ' cursor: pointer;';
-        cell.title = "Click to edit | Right-click to reset (Modified)";
-        cell.setAttribute("data-score-modified", "true");
-
-        const container = document.createElement("div");
-        container.style.cssText = getFlexContainerCSS();
-
-        const earnedSpan = document.createElement("span");
-        earnedSpan.textContent = formatNumber(earnedNum);
-        earnedSpan.style.cssText = "color: #dc3545; font-weight: bold; font-size: 13px;";
-
-        const slash = document.createElement("span");
-        slash.textContent = "/";
-        slash.style.cssText = "font-size: 13px;";
-
-        const totalSpan = document.createElement("span");
-        totalSpan.textContent = formatNumber(totalNum);
-        totalSpan.style.cssText = "font-size: 13px;";
-
-        const resetBtn = document.createElement("button");
-        resetBtn.textContent = "\u21ba";
-        resetBtn.title = "Reset to original";
-        resetBtn.style.cssText = 'background: #dc3545; color: white; border: none; border-radius: 3px; padding: 0 3px; margin-left: 4px; cursor: pointer; font-size: 11px; font-weight: bold; height: 18px; line-height: 1;';
-        resetBtn.addEventListener("click", function(e) {
-            e.stopPropagation();
-            resetSingleScore(rowId, cell);
-        });
-
-        container.appendChild(earnedSpan);
-        container.appendChild(slash);
-        container.appendChild(totalSpan);
-        container.appendChild(resetBtn);
-        cell.appendChild(container);
-    } catch (error) {
-        // Silent error handling
-    }
-}
 
 
 function resetSingleScore(rowId, cellOverride = null, fromUndo = false) {
@@ -2508,17 +2610,18 @@ function resetSingleScore(rowId, cellOverride = null, fromUndo = false) {
         
         let row = editData?.row || cellOverride?.closest?.("tr");
         if (!row && rowId) {
-            row = document.querySelector(`[data-original-row-id="${rowId}"]`);
+            row = document.querySelector(`[data-original-row-id="${rowId}"]`)
+                || document.querySelector(`[data-fgs-row-id="${rowId}"]`);
         }
 
         let scoreCell = cellOverride || null;
         if (!scoreCell && row) {
-            scoreCell = row.querySelector("td:nth-child(3)");
+            scoreCell = getCell(row, 'points');
         }
 
         if (!editData && !snapshot) {
             const probeRow = row || scoreCell?.closest?.("tr") || null;
-            const probeCell = scoreCell || probeRow?.querySelector?.("td:nth-child(3)");
+            const probeCell = scoreCell || (probeRow ? getCell(probeRow, 'points') : null);
             if (probeRow && probeCell) {
                 snapshot = captureOriginalScoreSnapshot(probeRow, probeCell, rowId);
             }
@@ -2545,21 +2648,46 @@ function resetSingleScore(rowId, cellOverride = null, fromUndo = false) {
 
         // Also restore the percentage cell and letter grade cell
         if (row) {
-            const percentCell = row.querySelector("td:nth-child(4)");
+            const percentCell = getCell(row, 'percent');
             if (percentCell) {
                 restoreOriginalPercentage(percentCell, rowId);
-                // Clean up stored attributes after restoration
                 percentCell.removeAttribute("data-original-percent-html");
                 percentCell.removeAttribute("data-original-percent-text");
             }
 
-            // Restore the letter grade cell
-            const letterCell = row.querySelector("td:nth-child(5)");
+            const letterCell = getCell(row, 'grade');
             if (letterCell) {
                 restoreOriginalLetterGrade(letterCell, rowId);
-                // Clean up stored attributes after restoration
                 letterCell.removeAttribute("data-original-letter-html");
                 letterCell.removeAttribute("data-original-letter-text");
+            }
+        }
+
+        // Save to redo history so the user can re-apply the reverted edit
+        if (!fromUndo && editData && editData.modifiedEarned !== undefined) {
+            const classKey = editData.classKey || getCurrentClassKey();
+
+            scoreRedoHistory.push({
+                rowId,
+                classKey,
+                editData: {
+                    modifiedEarned: editData.modifiedEarned,
+                    modifiedTotal: editData.modifiedTotal,
+                    originalEarned: editData.originalEarned,
+                    total: editData.total,
+                    wasExcluded: editData.wasExcluded,
+                    originalHTML: editData.originalHTML,
+                    original: editData.original,
+                    category: editData.category
+                },
+                timestamp: Date.now()
+            });
+
+            // Move the matching action from actionHistory to actionRedoHistory
+            const actionIdx = actionHistory.findLastIndex(a => a.classKey === classKey && a.type === 'scoreEdit' && a.rowId === rowId);
+            if (actionIdx !== -1) {
+                const action = actionHistory.splice(actionIdx, 1)[0];
+                actionRedoHistory.push({ ...action });
             }
         }
 
@@ -2574,7 +2702,7 @@ function resetSingleScore(rowId, cellOverride = null, fromUndo = false) {
         calculate();
 
     } catch (error) {
-        console.error("SCORE RESET - Error:", error);
+        /* silent */
     }
 }
 
@@ -2586,10 +2714,10 @@ function clearAllScoreEdits() {
             
             Object.keys(editedScores).forEach(rowId => {
                     const editData = editedScores[rowId];
-                    const row = editData.row;
-                    const scoreCell = row.querySelector("td:nth-child(3)");
-                    const percentCell = row.querySelector("td:nth-child(4)");
-                    const letterCell = row.querySelector("td:nth-child(5)");
+                    const row = editData.row && editData.row.parentNode ? editData.row : document.querySelector(`[data-original-row-id="${rowId}"]`);
+                    const scoreCell = getCell(row, 'points');
+                    const percentCell = getCell(row, 'percent');
+                    const letterCell = getCell(row, 'grade');
 
                     if (scoreCell) {
                         const sourceData = editData.originalHTML
@@ -2623,7 +2751,7 @@ function clearAllScoreEdits() {
             calculate();
 
     } catch (error) {
-            console.error("SCORE EDIT - Error clearing:", error);
+            /* silent */
     }
 }
 
@@ -2678,7 +2806,8 @@ function clearAllScoreEdits() {
                                                         total: editData.total,
                                                         wasExcluded: editData.wasExcluded,
                                                         originalHTML: editData.originalHTML,
-                                                        original: editData.original
+                                                        original: editData.original,
+                                                        category: editData.category || ""
                                                 },
                                                 timestamp: Date.now()
                                         });
@@ -2714,7 +2843,7 @@ function clearAllScoreEdits() {
 
                         const lastAssignment = classHypotheticals[classHypotheticals.length - 1];
 
-                        redoHistory.push({ assignment: { ...lastAssignment }, classKey: classKey, nextRowColor: nextRowColor });
+                        const redoEntry = { assignment: { ...lastAssignment }, classKey: classKey, nextRowColor: nextRowColor };
 
                         const globalIndex = hypotheticals.findIndex((h) => h === lastAssignment);
                         if (globalIndex !== -1) hypotheticals.splice(globalIndex, 1);
@@ -2724,8 +2853,20 @@ function clearAllScoreEdits() {
                                 // Rows are prepended (insertBefore firstChild), so [0] is the most recently added
                                 const removedRow = hypotheticalRows[0];
 
-                                const removedRowId = removedRow.getAttribute("data-original-row-id") || removedRow.getAttribute("data-fgs-row-id");
+                                const removedRowId = getRowId(removedRow);
                                 if (removedRowId) {
+                                        // Save any pending score redo entries for this row so redo can restore them
+                                        const savedScoreRedos = scoreRedoHistory.filter(r => r.rowId === removedRowId);
+                                        if (savedScoreRedos.length > 0) {
+                                                redoEntry.savedScoreRedos = savedScoreRedos.map(r => ({ ...r, editData: { ...r.editData } }));
+                                        }
+                                        // Also capture modified values into the assignment for redo
+                                        if (editedScores[removedRowId]) {
+                                                const edit = editedScores[removedRowId];
+                                                if (Number.isFinite(edit.modifiedEarned)) redoEntry.assignment.earned = edit.modifiedEarned;
+                                                if (Number.isFinite(edit.modifiedTotal)) redoEntry.assignment.total = edit.modifiedTotal;
+                                        }
+
                                         scoreEditHistory = scoreEditHistory.filter(e => e.rowId !== removedRowId);
                                         scoreRedoHistory = scoreRedoHistory.filter(r => r.rowId !== removedRowId);
                                         if (editedScores[removedRowId]) {
@@ -2737,6 +2878,7 @@ function clearAllScoreEdits() {
                                 nextRowColor = getNextColorFromTable();
                         }
 
+                        redoHistory.push(redoEntry);
                         if (hypotheticalCount > 1) hypotheticalCount--;
                 }
 
@@ -2755,7 +2897,7 @@ function clearAllScoreEdits() {
                         nextRowColor = getNextColorFromTable();
                 }
         } catch (error) {
-                console.error("UNDO OPERATION - Error:", error);
+                /* silent */
         }
     }
     
@@ -2789,7 +2931,7 @@ function clearAllScoreEdits() {
                 }
 
         } catch (error) {
-                console.error("REDO OPERATION - Error:", error);
+                /* silent */
         }
     }
 
@@ -2800,15 +2942,16 @@ function clearAllScoreEdits() {
 
                 const lastRedo = classScoreRedos[classScoreRedos.length - 1];
 
-                const row = document.querySelector('[data-original-row-id="' + lastRedo.rowId + '"]');
+                const row = document.querySelector('[data-original-row-id="' + lastRedo.rowId + '"]')
+                        || document.querySelector('[data-fgs-row-id="' + lastRedo.rowId + '"]');
                 if (!row) {
                         const redoIndex = scoreRedoHistory.indexOf(lastRedo);
                         if (redoIndex !== -1) scoreRedoHistory.splice(redoIndex, 1);
                         return;
                 }
 
-                const scoreCell = row.querySelector("td:nth-child(3)");
-                const percentCell = row.querySelector("td:nth-child(4)");
+                const scoreCell = getCell(row, 'points');
+                const percentCell = getCell(row, 'percent');
                 if (!scoreCell) return;
 
                 editedScores[lastRedo.rowId] = {
@@ -2821,48 +2964,14 @@ function clearAllScoreEdits() {
                         wasExcluded: lastRedo.editData.wasExcluded,
                         modified: lastRedo.editData.modifiedEarned + '/' + lastRedo.editData.modifiedTotal,
                         row: row,
-                        classKey: lastRedo.classKey
+                        classKey: lastRedo.classKey,
+                        category: lastRedo.editData.category || ""
                 };
 
                 const earnedNum = lastRedo.editData.modifiedEarned;
                 const totalNum = lastRedo.editData.modifiedTotal;
-                const originalHeight = scoreCell.offsetHeight;
 
-                // Clear cell safely
-                while (scoreCell.firstChild) scoreCell.removeChild(scoreCell.firstChild);
-                scoreCell.style.cssText = getEditorCellCSS(originalHeight) + ' cursor: pointer;';
-                scoreCell.title = "Click to edit | Right-click to reset (Modified)";
-                scoreCell.setAttribute("data-score-modified", "true");
-
-                const container = document.createElement("div");
-                container.style.cssText = getFlexContainerCSS();
-
-                const earnedSpan = document.createElement("span");
-                earnedSpan.textContent = formatNumber(earnedNum);
-                earnedSpan.style.cssText = "color: #dc3545; font-weight: bold; font-size: 13px;";
-
-                const slash = document.createElement("span");
-                slash.textContent = "/";
-                slash.style.cssText = "font-size: 13px;";
-
-                const totalSpan = document.createElement("span");
-                totalSpan.textContent = formatNumber(totalNum);
-                totalSpan.style.cssText = "font-size: 13px;";
-
-                const resetBtn = document.createElement("button");
-                resetBtn.textContent = "\u21ba";
-                resetBtn.title = "Reset to original";
-                resetBtn.style.cssText = 'background: #dc3545; color: white; border: none; border-radius: 3px; padding: 0 3px; margin-left: 4px; cursor: pointer; font-size: 11px; font-weight: bold; height: 18px; line-height: 1;';
-                resetBtn.addEventListener("click", function(e) {
-                        e.stopPropagation();
-                        resetSingleScore(lastRedo.rowId, scoreCell);
-                });
-
-                container.appendChild(earnedSpan);
-                container.appendChild(slash);
-                container.appendChild(totalSpan);
-                container.appendChild(resetBtn);
-                scoreCell.appendChild(container);
+                buildModifiedScoreCellUI(scoreCell, earnedNum, totalNum, lastRedo.rowId);
 
                 if (percentCell && totalNum > 0) {
                         const calculatedPercent = (earnedNum / totalNum) * 100;
@@ -2895,6 +3004,30 @@ function clearAllScoreEdits() {
 
                 hypotheticals.push(lastRedo.assignment);
                 addRow(lastRedo.assignment);
+
+                // Restore saved score redo entries with the new row ID
+                if (lastRedo.savedScoreRedos && lastRedo.savedScoreRedos.length > 0) {
+                        // The new row is the first child (addRow uses insertBefore firstChild)
+                        const table = document.querySelector(".grades-grid.dataTable tbody");
+                        const newRow = table ? table.querySelector("tr.hypothetical") : null;
+                        const newRowId = newRow ? getRowId(newRow) : null;
+                        if (newRowId) {
+                                lastRedo.savedScoreRedos.forEach(savedRedo => {
+                                        savedRedo.rowId = newRowId;
+                                        scoreRedoHistory.push(savedRedo);
+                                });
+                                // Also restore corresponding actionRedoHistory entries for these score edits
+                                lastRedo.savedScoreRedos.forEach(savedRedo => {
+                                        actionRedoHistory.push({
+                                                type: 'scoreEdit',
+                                                classKey: classKey,
+                                                rowId: newRowId,
+                                                timestamp: Date.now()
+                                        });
+                                });
+                        }
+                }
+
                 calculate();
 
                 // Re-bind score editing listeners on the new row
@@ -2924,7 +3057,7 @@ function clearAllScoreEdits() {
 
                 // Try to find the exact row by matching score data
                 for (const row of hypotheticalRows) {
-                        const nameCell = row.querySelector("td:nth-child(2)");
+                        const nameCell = getCell(row, 'assignment');
                         if (nameCell && nameCell.hasAttribute('data-assignment-info')) {
                                 try {
                                         const info = JSON.parse(nameCell.getAttribute('data-assignment-info'));
@@ -2944,7 +3077,7 @@ function clearAllScoreEdits() {
 
                 if (removedRow) {
                         // Clean up score edit data for this row
-                        const removedRowId = removedRow.getAttribute("data-original-row-id") || removedRow.getAttribute("data-fgs-row-id");
+                        const removedRowId = getRowId(removedRow);
                         if (removedRowId) {
                                 scoreEditHistory = scoreEditHistory.filter(e => e.rowId !== removedRowId);
                                 scoreRedoHistory = scoreRedoHistory.filter(r => r.rowId !== removedRowId);
@@ -2989,25 +3122,30 @@ function clearAllScoreEdits() {
          */
         function clearAll() {
         try {
-                
+
                 const classKey = getCurrentClassKey();
-                const removedCount = hypotheticals.filter((h) => h.classKey === classKey).length;
-                
-                // Clear all score edits
+
+                // Clear all score edits first (restores cells individually)
                 clearAllScoreEdits();
-                
+
                 hypotheticals = hypotheticals.filter((h) => h.classKey !== classKey);
                 redoHistory = redoHistory.filter((r) => r.classKey !== classKey);
                 actionHistory = actionHistory.filter((a) => a.classKey !== classKey);
                 actionRedoHistory = actionRedoHistory.filter((a) => a.classKey !== classKey);
                 hypotheticalCount = 1;
-                
+
                 document.querySelectorAll(".hypothetical").forEach((e) => e.remove());
                 clearDisplays();
                 restoreOriginalRows();
                 if (mode === "weighted") {
                 restoreOriginalCategoryData();
                 }
+
+                // Safety net: clear any lingering modified-score markers left after restoration
+                document.querySelectorAll("[data-score-modified]").forEach((e) => e.removeAttribute("data-score-modified"));
+                document.querySelectorAll("[data-percent-modified]").forEach((e) => e.removeAttribute("data-percent-modified"));
+                document.querySelectorAll("[data-letter-modified]").forEach((e) => e.removeAttribute("data-letter-modified"));
+                document.querySelectorAll("[data-fgs-edit-bound]").forEach((e) => e.removeAttribute("data-fgs-edit-bound"));
                 
                 // Use smart color detection after clearing
                 nextRowColor = getNextColorFromTable();
@@ -3027,7 +3165,7 @@ function clearAllScoreEdits() {
                 }, 300);
                 
         } catch (error) {
-                console.error("CLEAR ALL OPERATION - Error:", error);
+                /* silent */
         }
         }
     

@@ -87,8 +87,16 @@
                 // Auto-detect class type
                 mode = detectClassType();
 
+                // Build column index map for dynamic column detection
+                buildColumnIndexMap();
+
+                // Save original rows early so Reset All can always restore
+                if (typeof saveOriginalRows === 'function') {
+                        saveOriginalRows();
+                }
+
                 // Warn if Focus didn't load the points/score column
-                if (!hasValidScoreColumn()) {
+                if (!getCell(document.querySelector('.grades-grid.dataTable tbody tr'), 'points')) {
                         if (typeof showToast === 'function') {
                                 showToast('No Points column detected — grades may be inaccurate. Try going to the home page, opening a class that has the Points column, then switching to this class from the dropdown.', 'warning', 6000);
                         }
@@ -134,7 +142,7 @@
                 }, 100);
 
         } catch (error) {
-                console.error("Error in launchGradeCalculator:", error);
+                /* silent */
         }
         };
 
@@ -157,23 +165,6 @@
                         );
                 } catch (error) {
                         return true; // Default to allowing if error
-                }
-        }
-
-        /**
-         * Checks if Focus loaded the score/points column in the gradebook.
-         * Focus sometimes glitches and omits this column, breaking calculations.
-         */
-        function hasValidScoreColumn() {
-                try {
-                        // Check if the assignment table has a "Points" column header
-                        const headers = document.querySelectorAll('.grades-grid.dataTable thead th');
-                        for (const header of headers) {
-                                if (header.textContent.trim() === 'Points') return true;
-                        }
-                        return false;
-                } catch (error) {
-                        return true;
                 }
         }
 
@@ -260,7 +251,7 @@
                                 // Per request: do not auto-enable editing; user must click Grade Calculator
                         }, 50);
                 } catch (error) {
-                        console.error("Error in createFloatingPopup:", error);
+                        /* silent */
                 }
         }
         /**
@@ -384,7 +375,7 @@
                                 }, 150); // Increased timeout for better reliability
                         }
                 } catch (error) {
-                        console.error("Error in handleExtensionClick:", error);
+                        /* silent */
                         isPopupInitializing = false;
                 }
         }
@@ -801,34 +792,56 @@
                                 });
                         });
 
-                        // Manual Class Creation
-                        safeAddGPAListener("fgs-gpa-create-manual", "click", () => {
-                                const modal = document.getElementById('fgs-gpa-manual-modal');
-                                if (modal) {
-                                        modal.style.display = 'flex';
+                        // Manual Class Creation — show/hide as a full step
+                        const showManualStep = () => {
+                                const step1 = document.getElementById('fgs-gpa-step-1');
+                                const manualStep = document.getElementById('fgs-gpa-manual-step');
+                                if (step1) step1.style.display = 'none';
+                                if (manualStep) {
+                                        manualStep.style.display = 'flex';
                                         // Clear previous input
                                         const nameInput = document.getElementById('fgs-manual-class-name');
                                         const typeSelect = document.getElementById('fgs-manual-class-type');
-                                        const q1Select = document.getElementById('fgs-manual-q1');
-                                        const q2Select = document.getElementById('fgs-manual-q2');
-                                        const examSelect = document.getElementById('fgs-manual-exam');
-                                        if (nameInput) nameInput.value = '';
+                                        if (nameInput) { nameInput.value = ''; nameInput.style.borderColor = ''; }
                                         if (typeSelect) typeSelect.value = 'DualEnrollment';
-                                        if (q1Select) q1Select.value = '';
-                                        if (q2Select) q2Select.value = '';
-                                        if (examSelect) examSelect.value = '';
+                                        // Clear all grade selects
+                                        ['fgs-manual-q1', 'fgs-manual-q2', 'fgs-manual-s1-exam',
+                                         'fgs-manual-q3', 'fgs-manual-q4', 'fgs-manual-s2-exam'].forEach(id => {
+                                                const el = document.getElementById(id);
+                                                if (el) el.value = '';
+                                        });
+                                        // Show correct semester fields
+                                        const selectedSemester = (typeof gpaCalculatorData !== 'undefined') ? gpaCalculatorData.selectedSemester : 'semester2';
+                                        const sem1Fields = document.getElementById('fgs-manual-sem1-fields');
+                                        const sem2Fields = document.getElementById('fgs-manual-sem2-fields');
+                                        if (sem1Fields && sem2Fields) {
+                                                if (selectedSemester === 'semester2') {
+                                                        sem1Fields.style.display = 'none';
+                                                        sem2Fields.style.display = 'flex';
+                                                } else if (selectedSemester === 'fullYear') {
+                                                        sem1Fields.style.display = 'flex';
+                                                        sem2Fields.style.display = 'flex';
+                                                } else {
+                                                        sem1Fields.style.display = 'flex';
+                                                        sem2Fields.style.display = 'none';
+                                                }
+                                        }
                                 }
-                        });
+                        };
 
-                        safeAddGPAListener("fgs-gpa-manual-close", "click", () => {
-                                const modal = document.getElementById('fgs-gpa-manual-modal');
-                                if (modal) modal.style.display = 'none';
-                        });
+                        const hideManualStep = () => {
+                                const step1 = document.getElementById('fgs-gpa-step-1');
+                                const manualStep = document.getElementById('fgs-gpa-manual-step');
+                                if (manualStep) manualStep.style.display = 'none';
+                                if (step1) step1.style.display = 'flex';
+                        };
 
-                        safeAddGPAListener("fgs-manual-cancel-btn", "click", () => {
-                                const modal = document.getElementById('fgs-gpa-manual-modal');
-                                if (modal) modal.style.display = 'none';
+                        safeAddGPAListener("fgs-gpa-create-manual", "click", showManualStep);
+                        safeAddGPAListener("fgs-gpa-core-help-link", "click", () => {
+                                if (typeof showCoreGPAHelp === 'function') showCoreGPAHelp();
                         });
+                        safeAddGPAListener("fgs-gpa-manual-back", "click", hideManualStep);
+                        safeAddGPAListener("fgs-manual-cancel-btn", "click", hideManualStep);
 
                         // Semester selector event listener
                         safeAddGPAListener("fgs-gpa-semester-select", "change", (e) => {
@@ -1034,9 +1047,8 @@
                                                 renderClassList();
                                         }
 
-                                        // Close the modal
-                                        const modal = document.getElementById('fgs-gpa-manual-modal');
-                                        if (modal) modal.style.display = 'none';
+                                        // Return to step 1
+                                        hideManualStep();
                                 }
                         });
 

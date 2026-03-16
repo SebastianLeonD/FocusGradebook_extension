@@ -57,8 +57,11 @@ function getPopupHTML() {
             <div class="fgs-calculator-form" id="fgs-calculator-form" style="display: none;">
                 <div class="fgs-calc-header">
                     <button class="fgs-back-btn" id="fgs-back">← Back</button>
+                    <span class="fgs-calc-header-title">Create a New Assignment</span>
                 </div>
-                
+
+                <div class="fgs-edit-tip" id="fgs-edit-tip">Click on any Points, Percent, or Grade cell in the table to edit it directly.</div>
+
                 <input type="text" id="fgs-name" placeholder="Assignment Name (optional)" class="fgs-input" aria-label="Assignment Name" />
                 <input type="number" id="fgs-earned" placeholder="Points Earned" class="fgs-input" min="0" step="any" aria-label="Points Earned" aria-required="true" />
                 <input type="number" id="fgs-total" placeholder="Points Possible" class="fgs-input" min="0" step="any" aria-label="Points Possible" aria-required="true" />
@@ -121,6 +124,7 @@ function getPopupHTML() {
                         </div>
 
                         <p class="fgs-gpa-subheading" id="fgs-gpa-subheading-text">Focus grades are auto-filled when available. Confirm or adjust Q3, Q4, and Semester Exam letters for each course.</p>
+                        <a class="fgs-gpa-core-help-link" id="fgs-gpa-core-help-link">How to get the most accurate Core GPA?</a>
 
                         <!-- Full Year Warning Banner - Hidden by default -->
                         <div class="fgs-gpa-full-year-warning" id="fgs-gpa-full-year-warning" style="display: none;">
@@ -186,13 +190,14 @@ function getPopupHTML() {
                     </div>
                 </div>
 
-                <!-- Manual Class Creation Modal -->
-                <div class="fgs-gpa-manual-modal" id="fgs-gpa-manual-modal" style="display: none;">
-                    <div class="fgs-gpa-manual-header">
-                        <h4>Create Manual Class</h4>
-                        <button class="fgs-gpa-manual-close" id="fgs-gpa-manual-close">×</button>
+                <!-- Manual Class Creation Step -->
+                <div class="fgs-gpa-step" id="fgs-gpa-manual-step" style="display: none;">
+                    <div class="fgs-gpa-header">
+                        <button class="fgs-gpa-back" id="fgs-gpa-manual-back">\u2190 Back</button>
                     </div>
-                    <div class="fgs-gpa-manual-content">
+                    <div class="fgs-gpa-content">
+                        <h3>Create Manual Class</h3>
+
                         <input type="text" id="fgs-manual-class-name" class="fgs-manual-input" placeholder="Class Name (e.g., Dual Enrollment Math)" />
 
                         <label class="fgs-manual-label">Course Type:</label>
@@ -213,7 +218,7 @@ function getPopupHTML() {
                             <!-- Semester 1 Fields -->
                             <div class="fgs-manual-sem1-fields" id="fgs-manual-sem1-fields" style="display: none;">
                                 <div class="fgs-manual-grade-box">
-                                    <label class="fgs-manual-label">Q1 Grade:</label>
+                                    <label class="fgs-manual-label">Q1</label>
                                     <select id="fgs-manual-q1" class="fgs-manual-grade-select">
                                         <option value="">--</option>
                                         <option value="A">A</option>
@@ -227,7 +232,7 @@ function getPopupHTML() {
                                     </select>
                                 </div>
                                 <div class="fgs-manual-grade-box">
-                                    <label class="fgs-manual-label">Q2 Grade:</label>
+                                    <label class="fgs-manual-label">Q2</label>
                                     <select id="fgs-manual-q2" class="fgs-manual-grade-select">
                                         <option value="">--</option>
                                         <option value="A">A</option>
@@ -241,7 +246,7 @@ function getPopupHTML() {
                                     </select>
                                 </div>
                                 <div class="fgs-manual-grade-box">
-                                    <label class="fgs-manual-label">S1 Exam:</label>
+                                    <label class="fgs-manual-label">S1 Exam</label>
                                     <select id="fgs-manual-s1-exam" class="fgs-manual-grade-select">
                                         <option value="">--</option>
                                         <option value="A">A</option>
@@ -260,7 +265,7 @@ function getPopupHTML() {
                             <!-- Semester 2 Fields (default visible) -->
                             <div class="fgs-manual-sem2-fields" id="fgs-manual-sem2-fields">
                                 <div class="fgs-manual-grade-box">
-                                    <label class="fgs-manual-label">Q3 Grade:</label>
+                                    <label class="fgs-manual-label">Q3</label>
                                     <select id="fgs-manual-q3" class="fgs-manual-grade-select">
                                         <option value="">--</option>
                                         <option value="A">A</option>
@@ -274,7 +279,7 @@ function getPopupHTML() {
                                     </select>
                                 </div>
                                 <div class="fgs-manual-grade-box">
-                                    <label class="fgs-manual-label">Q4 Grade:</label>
+                                    <label class="fgs-manual-label">Q4</label>
                                     <select id="fgs-manual-q4" class="fgs-manual-grade-select">
                                         <option value="">--</option>
                                         <option value="A">A</option>
@@ -288,7 +293,7 @@ function getPopupHTML() {
                                     </select>
                                 </div>
                                 <div class="fgs-manual-grade-box">
-                                    <label class="fgs-manual-label">S2 Exam:</label>
+                                    <label class="fgs-manual-label">S2 Exam</label>
                                     <select id="fgs-manual-s2-exam" class="fgs-manual-grade-select">
                                         <option value="">--</option>
                                         <option value="A">A</option>
@@ -305,8 +310,10 @@ function getPopupHTML() {
                             </div>
                         </div>
 
-                        <button class="fgs-btn fgs-btn-primary" id="fgs-manual-add-btn">Add Class</button>
-                        <button class="fgs-btn fgs-btn-secondary" id="fgs-manual-cancel-btn">Cancel</button>
+                        <div class="fgs-manual-actions">
+                            <button class="fgs-btn fgs-btn-primary" id="fgs-manual-add-btn">Add Class</button>
+                            <button class="fgs-btn fgs-btn-secondary" id="fgs-manual-cancel-btn">Cancel</button>
+                        </div>
                     </div>
                 </div>
 

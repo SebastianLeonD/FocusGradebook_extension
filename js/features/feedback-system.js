@@ -188,7 +188,7 @@ function sendViaWeb3Forms(feedbackText) {
             // Additional useful info
             formData.append('timestamp', new Date().toISOString());
             formData.append('extension_version', chrome.runtime.getManifest().version);
-            formData.append('page_url', window.location.href);
+            formData.append('page_url', window.location.origin + window.location.pathname);
             formData.append('user_agent', navigator.userAgent);
             
             // Web3Forms configuration
@@ -264,41 +264,41 @@ function openNewFeaturesModal() {
                         <div class="fgs-feature-badge-container">
                             <span class="fgs-feature-badge fgs-badge-new">NEW</span>
                         </div>
-                        <div class="fgs-feature-icon">📆</div>
-                        <h3 class="fgs-feature-title">Semester 2 & Full Year GPA</h3>
-                        <p class="fgs-feature-description">The GPA Calculator now supports Semester 2 (Q3, Q4, S2 Exam) and Full Year mode. Switch between Semester 1, Semester 2, or Full Year from the dropdown to project your GPA across any time period.</p>
+                        <div class="fgs-feature-icon">🎯</div>
+                        <h3 class="fgs-feature-title">Core GPA Calculator</h3>
+                        <p class="fgs-feature-description">The GPA Calculator now shows your Core GPA alongside Cumulative and Weighted. Uses the correct BCPS core bonuses (+0.5 Honors, +1.0 AP/IB) and projects how this semester affects your core GPA.</p>
                         <div class="fgs-feature-tags">
-                            <span class="fgs-feature-tag">Semester 2</span>
-                            <span class="fgs-feature-tag">Full Year</span>
+                            <span class="fgs-feature-tag">Core GPA</span>
                             <span class="fgs-feature-tag">BCPS Formula</span>
+                            <span class="fgs-feature-tag">Semester Projection</span>
                         </div>
                     </div>
 
                     <!-- SECONDARY FEATURE - Bottom left 25% -->
                     <div class="fgs-feature-card fgs-feature-secondary">
                         <div class="fgs-feature-badge-container">
-                            <span class="fgs-feature-badge fgs-badge-fixed">FIXED</span>
+                            <span class="fgs-feature-badge fgs-badge-new">NEW</span>
                         </div>
-                        <div class="fgs-feature-icon">🐛</div>
-                        <h3 class="fgs-feature-title">Z Grade Bug Fix</h3>
-                        <p class="fgs-feature-description">Fixed a bug where editing a Z (zero) grade would cause wildly incorrect hypothetical grades. Z grades now calculate correctly.</p>
+                        <div class="fgs-feature-icon">🔄</div>
+                        <h3 class="fgs-feature-title">Undo & Redo Everything</h3>
+                        <p class="fgs-feature-description">Added assignments, deleted rows, and score edits can all be undone and redone. Use the toolbar buttons or Ctrl+Z / Ctrl+Y.</p>
                         <div class="fgs-feature-tags">
-                            <span class="fgs-feature-tag">Grade calc fix</span>
-                            <span class="fgs-feature-tag">Accurate %</span>
+                            <span class="fgs-feature-tag">Ctrl+Z / Ctrl+Y</span>
+                            <span class="fgs-feature-tag">Full History</span>
                         </div>
                     </div>
 
                     <!-- SECONDARY FEATURE - Bottom right 25% -->
                     <div class="fgs-feature-card fgs-feature-secondary">
                         <div class="fgs-feature-badge-container">
-                            <span class="fgs-feature-badge fgs-badge-new">NEW</span>
+                            <span class="fgs-feature-badge fgs-badge-fixed">IMPROVED</span>
                         </div>
-                        <div class="fgs-feature-icon">📝</div>
-                        <h3 class="fgs-feature-title">Letter Grade Editing</h3>
-                        <p class="fgs-feature-description">Click any letter grade to edit it directly. Points and percentages update automatically and stay in sync.</p>
+                        <div class="fgs-feature-icon">⚡</div>
+                        <h3 class="fgs-feature-title">Smarter Column Detection</h3>
+                        <p class="fgs-feature-description">Grade calculations now work regardless of column order. No more breaking when Focus changes its table layout or hides columns.</p>
                         <div class="fgs-feature-tags">
-                            <span class="fgs-feature-tag">Click to edit</span>
-                            <span class="fgs-feature-tag">Auto-sync</span>
+                            <span class="fgs-feature-tag">Dynamic Columns</span>
+                            <span class="fgs-feature-tag">Reliability</span>
                         </div>
                     </div>
 
@@ -332,7 +332,7 @@ function openNewFeaturesModal() {
         if (closeBtn) closeBtn.addEventListener('click', closeHandler);
 
     } catch (error) {
-        console.error('New features modal failed', error);
+        /* silent */
     }
 }
 

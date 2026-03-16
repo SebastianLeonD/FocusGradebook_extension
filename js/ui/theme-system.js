@@ -140,7 +140,7 @@ function applyPopupTheme(themeName) {
         }, 50);
         
     } catch (error) {
-        console.error('THEME SWITCH - Error applying theme:', error);
+        /* silent */
     }
 }
 
@@ -153,7 +153,7 @@ function applySizingForCurrentInterface() {
             setPopupSizeForInterface(determineActiveInterface());
         }
     } catch (error) {
-        console.error('Error applying sizing:', error);
+        /* silent */
     }
 }
 
@@ -243,14 +243,15 @@ function generateThemedCSS(theme) {
         }
         
         .fgs-popup-header {
-            background: ${theme.isTransparent ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)'};
+            background: ${theme.isTransparent ? 'rgba(240, 240, 240, 0.95)' : 'rgba(0, 0, 0, 0.15)'};
+            ${theme.isTransparent ? popupBackdrop : ''}
             padding: 8px 10px;
             border-radius: 12px 12px 0 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
             cursor: move;
-            border-bottom: 1px solid ${theme.isTransparent ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'};
+            border-bottom: 1px solid ${theme.isTransparent ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)'};
             position: sticky;
             top: 0;
             z-index: 10001;
@@ -475,12 +476,30 @@ function generateThemedCSS(theme) {
         }
         
         .fgs-calc-header {
-            display: flex; 
-            justify-content: space-between; 
+            display: flex;
+            justify-content: flex-start;
             align-items: center;
+            gap: 10px;
             margin-bottom: 10px;
         }
-        
+
+        .fgs-calc-header-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: ${theme.textColor};
+        }
+
+        .fgs-edit-tip {
+            font-size: 11px;
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.65)'};
+            background: ${isLightTheme ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.12)'};
+            border-left: 3px solid ${isLightTheme ? '#3b82f6' : '#60a5fa'};
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
         .fgs-mode-btn {
             padding: 10px;
             background: ${theme.buttonPrimary};
@@ -1005,6 +1024,22 @@ function generateThemedCSS(theme) {
             border-radius: 3px;
             font-size: 9px;
             font-weight: 600;
+            cursor: pointer;
+        }
+        .fgs-gpa-core-toggle {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+        }
+        .fgs-gpa-core-checkbox {
+            margin: 0;
+            cursor: pointer;
+        }
+        .fgs-gpa-core-tag.manual {
+            outline: 1px dashed rgba(255, 255, 255, 0.5);
         }
         
         .fgs-gpa-eoc-tag {
@@ -1407,6 +1442,96 @@ function generateThemedCSS(theme) {
             margin-bottom: 12px;
         }
         
+        .fgs-gpa-core-help-link {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: ${isLightTheme ? '#2563eb' : '#60a5fa'};
+            cursor: pointer;
+            margin: 8px 0;
+            text-align: center;
+            text-decoration: underline;
+        }
+
+        .fgs-gpa-core-help-link:hover {
+            opacity: 0.8;
+            color: ${isLightTheme ? '#1d4ed8' : '#93bbfd'};
+        }
+
+        .fgs-core-gpa-help-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2147483646;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fgs-core-gpa-help-popup {
+            position: relative;
+            background: ${isLightTheme ? '#fff' : '#1e1e2e'};
+            color: ${isLightTheme ? '#1a1a1a' : '#f0f0f0'};
+            border-radius: 10px;
+            padding: 20px 24px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .fgs-core-gpa-help-close {
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            font-size: 20px;
+            cursor: pointer;
+            color: ${isLightTheme ? '#999' : '#666'};
+            line-height: 1;
+        }
+
+        .fgs-core-gpa-help-close:hover {
+            color: ${isLightTheme ? '#333' : '#ccc'};
+        }
+
+        .fgs-core-gpa-help-popup h4 {
+            margin: 0 0 12px 0;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .fgs-core-gpa-help-steps {
+            margin: 0 0 14px 0;
+            padding-left: 20px;
+        }
+
+        .fgs-core-gpa-help-steps li {
+            margin: 6px 0;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .fgs-core-gpa-help-formula {
+            text-align: center;
+            font-size: 12px;
+            padding: 8px;
+            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.06)'};
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+
+        .fgs-core-gpa-help-note {
+            font-size: 11px;
+            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.45)'};
+            font-style: italic;
+            margin: 0;
+            line-height: 1.4;
+        }
+
         .fgs-gpa-info {
             background: ${theme.isTransparent ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.05)'};
             border-radius: 4px;
@@ -1657,6 +1782,16 @@ function generateThemedCSS(theme) {
             font-weight: 500;
             white-space: nowrap;
             flex-shrink: 0;
+        }
+
+        /* Core GPA rough estimate disclaimer */
+        .fgs-gpa-core-estimate-note {
+            font-size: 10px;
+            color: ${isLightTheme ? '#666' : '#aaa'};
+            font-style: italic;
+            text-align: center;
+            margin-top: 4px;
+            padding: 0 8px;
         }
 
         /* Core GPA note */
@@ -2170,75 +2305,21 @@ function generateThemedCSS(theme) {
             transform: translateY(-1px);
         }
 
-        /* Manual Class Creation Modal */
-        .fgs-gpa-manual-modal {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: ${theme.isTransparent ? 'rgba(255, 255, 255, 0.98)' : 'rgba(10, 37, 64, 0.98)'};
-            border-radius: 12px;
-            z-index: 10002;
-            display: flex;
-            flex-direction: column;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        .fgs-gpa-manual-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px;
-            border-bottom: 1px solid ${theme.isTransparent ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'};
-            background: ${theme.isTransparent ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'};
-        }
-
-        .fgs-gpa-manual-header h4 {
-            color: ${theme.textColor};
-            margin: 0;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .fgs-gpa-manual-close {
-            background: rgba(220, 53, 69, 0.8);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 26px;
-            height: 26px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-
-        .fgs-gpa-manual-close:hover {
-            background: rgba(220, 53, 69, 1);
-            transform: scale(1.1);
-        }
-
-        .fgs-gpa-manual-content {
-            padding: 16px;
+        /* Manual Class Creation Step */
+        #fgs-gpa-manual-step .fgs-gpa-content {
             display: flex;
             flex-direction: column;
             gap: 12px;
-            overflow-y: auto;
+        }
+
+        #fgs-gpa-manual-step h3 {
+            margin-bottom: 4px;
         }
 
         .fgs-manual-input, .fgs-manual-select, .fgs-manual-grade-select {
             padding: 8px 10px;
             border: 1px solid ${theme.isTransparent ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'};
-            border-radius: 4px;
+            border-radius: 6px;
             background: ${theme.isTransparent ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.2)'};
             color: ${theme.textColor};
             font-size: 12px;
@@ -2263,8 +2344,15 @@ function generateThemedCSS(theme) {
 
         .fgs-manual-grades {
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            gap: 8px;
             margin-top: 4px;
+        }
+
+        .fgs-manual-sem1-fields,
+        .fgs-manual-sem2-fields {
+            display: flex;
+            gap: 10px;
         }
 
         .fgs-manual-grade-box {
@@ -2272,6 +2360,17 @@ function generateThemedCSS(theme) {
             display: flex;
             flex-direction: column;
             gap: 4px;
+        }
+
+        .fgs-manual-grade-box .fgs-manual-label {
+            text-align: center;
+        }
+
+        .fgs-manual-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 4px;
         }
 
         .fgs-tutorial-backdrop {

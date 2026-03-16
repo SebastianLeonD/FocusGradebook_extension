@@ -39,7 +39,7 @@ chrome.action.onClicked.addListener((tab) => {
     if (isFocusUrl(tab.url)) {
         chrome.tabs.sendMessage(tab.id, { type: "openFloatingCalculator" }, (response) => {
             if (chrome.runtime.lastError) {
-                console.error("Error sending message:", chrome.runtime.lastError.message);
+                /* silent */
             }
         });
     }
