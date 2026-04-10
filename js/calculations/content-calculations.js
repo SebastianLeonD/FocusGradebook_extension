@@ -39,7 +39,35 @@ const EXCLUDED_SCORE_PATTERNS = [
     /^[\u2713\u2714]/ // Unicode check marks
 ];
 
+/**
+ * Classifies a score text string to determine if it's a Z-zero, excluded, or normal score.
+ * Single source of truth for Z/excluded detection — used by parseScoreCell and openScoreEditor.
+ * @param {string} text - Raw score text (e.g., "Z / 30", "NG / 12", "X / 5", "85 / 100")
+ * @returns {{ wasExcluded: boolean, earned: number|null, total: number|null }}
+ */
+function classifyScoreText(text) {
+	const upper = text.toUpperCase().trim();
+	const denominatorMatch = upper.match(/\/\s*([0-9.]+)/);
+	const denominator = denominatorMatch ? parseFloat(denominatorMatch[1]) : null;
+
+	// Z with denominator: zero grade that counts in the total (Focus behavior)
+	if (/^Z/i.test(upper) && /\/\s*[0-9]/.test(upper)) {
+		return { wasExcluded: false, earned: 0, total: denominator };
+	}
+
+	// Other excluded patterns (NG, X, *, EXC, checkmark) without a valid numeric score
+	const patternExcluded = EXCLUDED_SCORE_PATTERNS.some(p => p.test(upper));
+	const hasValidNumeric = /\d+\s*\/\s*\d+/.test(upper);
+	if (patternExcluded && !hasValidNumeric) {
+		return { wasExcluded: true, earned: 0, total: denominator };
+	}
+
+	// Normal score — caller handles numeric parsing
+	return { wasExcluded: false, earned: null, total: null };
+}
+
 const SCORE_COMPARE_EPSILON = 0.0001;
+
 
 function nearlyEqual(a, b, epsilon = SCORE_COMPARE_EPSILON) {
     const na = Number(a);
@@ -215,7 +243,7 @@ function parseScoreCell(row, scoreCell) {
             total: null,
             wasExcluded: false
         };
-        
+
         const nameCell = getCell(row, 'assignment');
         if (nameCell && nameCell.hasAttribute("data-assignment-info")) {
             try {
@@ -233,33 +261,21 @@ function parseScoreCell(row, scoreCell) {
         const clonedCell = scoreCell.cloneNode(true);
         const buttons = clonedCell.querySelectorAll("button");
         buttons.forEach((btn) => btn.remove());
-        
+
         const rawText = clonedCell.textContent.replace(/\s+/g, " ").trim();
         const upperText = rawText.toUpperCase();
         snapshot.text = rawText;
 
-        // Only check if the SCORE CELL itself contains excluded patterns
-        // Don't check other columns to avoid false positives from "Excused" status columns
-        const patternExcluded = EXCLUDED_SCORE_PATTERNS.some((pattern) => pattern.test(upperText));
+        const classification = classifyScoreText(rawText);
+        snapshot.wasExcluded = classification.wasExcluded;
+        if (classification.earned !== null) snapshot.earned = classification.earned;
+        if (classification.total !== null) snapshot.total = classification.total;
 
-        // Additional check: Make sure it's not a valid numeric score like "40/50"
-        const hasValidNumericScore = /\d+\s*\/\s*\d+/.test(upperText);
-
-        snapshot.wasExcluded = patternExcluded && !hasValidNumericScore;
-        
         const parseNumber = (value) => {
             const parsed = parseFloat(value);
             return isNaN(parsed) ? null : parsed;
         };
-        
-        if (snapshot.wasExcluded) {
-            snapshot.earned = 0;
-            const denominatorMatch = upperText.match(/\/\s*([0-9.]+)/);
-            if (denominatorMatch) {
-                snapshot.total = parseNumber(denominatorMatch[1]);
-            }
-        }
-        
+
         if (snapshot.earned === null || snapshot.total === null) {
             const scoreMatch = upperText.match(/(\d+\.?\d*)\s*\/\s*(\d+\.?\d*)/);
             if (scoreMatch) {
@@ -282,7 +298,7 @@ function parseScoreCell(row, scoreCell) {
                 }
             }
         }
-        
+
         if (snapshot.total === null && !snapshot.wasExcluded && snapshot.earned !== null) {
             snapshot.total = snapshot.earned;
         }
@@ -421,6 +437,17 @@ function calculate() {
                 }
                 lastClassKey = classKey;
 
+                // If no hypotheticals and no score edits exist, clear the display and stop
+                const classHypos = hypotheticals.filter(h => h.classKey === classKey);
+                const hasEdits = hasActiveScoreEditsForClass(classKey);
+                if (classHypos.length === 0 && !hasEdits) {
+                    clearDisplays();
+                    if (mode === "weighted") {
+                        restoreOriginalCategoryData();
+                    }
+                    return;
+                }
+
                 if (mode === "weighted") {
                         calculateWeighted();
                 } else {
@@ -515,43 +542,22 @@ function calculate() {
             } catch (error) { /* skip hypothetical */ }
         });
         
-        // Apply modified scores with proper logic for each case
+        // Apply modified scores: delta = modified - original
+        // Works for all cases: normal edits, excluded→graded, user-excluded
         const modifications = getModifiedScores();
         modifications.forEach((mod) => {
             try {
                 const category = mod.category;
                 if (!category) return;
 
-
                 if (!categoryMap[category]) {
-                    categoryMap[category] = {
-                        weight: 0,
-                        earned: 0,
-                        total: 0,
-                        hasHypotheticals: false
-                    };
+                    categoryMap[category] = { weight: 0, earned: 0, total: 0, hasHypotheticals: false };
                 }
 
                 const categoryData = categoryMap[category];
-                const modifiedEarned = Number.isFinite(mod.modifiedEarned) ? mod.modifiedEarned : 0;
-                const modifiedTotal = Number.isFinite(mod.modifiedTotal) ? mod.modifiedTotal : 0;
-                
-
-
-                if (mod.wasExcluded) {
-                    // Case: Excluded grade (x, ng, *, ✓) → Add BOTH numerator and denominator
-                    categoryData.earned += modifiedEarned;
-                    categoryData.total += modifiedTotal;
-                } else {
-                    // Case: Normal grade or zero grade → Subtract old, add new numerator
-                    categoryData.earned -= mod.originalEarned;
-
-                    categoryData.earned += modifiedEarned;
-                }
-
+                categoryData.earned += (mod.modifiedEarned - mod.originalEarned);
+                categoryData.total += (mod.modifiedTotal - mod.originalTotal);
                 categoryData.hasHypotheticals = true;
-
-
             } catch (error) { /* skip modification */ }
         });
         
@@ -644,96 +650,58 @@ function calculate() {
         } catch (error) { /* silent */ }
     }
     
-    /**
-         * Unweighted calculation now properly adds denominator for excluded assignments
-         * Find this function in content-calculations.js and replace it
-         */
-        function calculateUnweighted() {
-    try {
-        const classKey = getCurrentClassKey();
-        const rows = [...document.querySelectorAll(".grades-grid.dataTable tbody tr")];
-        let totalEarned = 0,
-            totalPossible = 0;
+	function calculateUnweighted() {
+	try {
+		const rows = [...document.querySelectorAll(".grades-grid.dataTable tbody tr")];
+		let totalEarned = 0, totalPossible = 0;
 
-        const modifications = getModifiedScores();
-        const modificationMap = {};
-        modifications.forEach((mod) => {
-            modificationMap[mod.rowId] = mod;
-        });
-        
-        // First pass: Add up all assignments exactly as they appear in the table
-        rows.forEach((row, index) => {
-            try {
-                if (row.classList.contains("hypothetical") && row.getAttribute("data-class-id") !== currentClassId) return;
-                
-                const pointsCell = getCell(row, 'points');
-                if (!pointsCell) return;
-                const raw = (pointsCell.innerText || "").split("/").map((s) => s.trim());
-                
-                const assumedRowId = row.getAttribute("data-original-row-id") ||
-                    (row.classList.contains("hypothetical")
-                        ? `hypothetical-row-${row.getAttribute("data-fgs-row-id") || index}`
-                        : `original-row-${index}`);
-                
-                const modEntry = assumedRowId ? modificationMap[assumedRowId] : null;
-                if (modEntry) {
-                    // For modified rows: Add original denominator (if not excluded), skip numerator
-                    if (!modEntry.wasExcluded) {
-                        const originalTotal = Number.isFinite(modEntry.originalTotal) ? modEntry.originalTotal : 0;
-                        totalPossible += originalTotal;
-                    }
-                    return;
-                }
-                
-                if (!isValid(raw[0], raw[1])) return;
-                const earned = raw[0].toUpperCase() === "Z" ? 0 : parseFloat(raw[0]);
-                const total = parseFloat(raw[1]);
-                
-                if (!isNaN(earned)) {
-                    if (!isNaN(total) && total > 0) {
-                        totalEarned += earned;
-                        totalPossible += total;
-                    } else if (total === 0 && earned > 0) {
-                        totalEarned += earned;
-                    }
-                }
-            } catch (error) { /* skip row */ }
-        });
-        
-        
-        // Second pass: Apply modifications with proper logic for each case
-        modifications.forEach((mod) => {
-            try {
+		rows.forEach((row, index) => {
+			try {
+				if (row.classList.contains("hypothetical") && row.getAttribute("data-class-id") !== currentClassId) return;
 
-                const modifiedEarned = Number.isFinite(mod.modifiedEarned) ? mod.modifiedEarned : 0;
-                const modifiedTotal = Number.isFinite(mod.modifiedTotal) ? mod.modifiedTotal : 0;
+				const rowId = row.getAttribute("data-original-row-id") ||
+					(row.classList.contains("hypothetical")
+						? `hypothetical-row-${row.getAttribute("data-fgs-row-id") || index}`
+						: `original-row-${index}`);
 
-                if (mod.wasExcluded) {
-                    // Case: Excluded grade (x, ng, *, ✓) → Add BOTH numerator and denominator
-                    totalEarned += modifiedEarned;
-                    totalPossible += modifiedTotal;
-                } else {
-                    // Case: Normal grade or zero grade → First pass already skipped this assignment, just add new value
-                    totalEarned += modifiedEarned;
-                }
+				const edit = editedScores[rowId];
+				let earned, total;
 
+				if (edit && edit.modified) {
+					// Modified row — use the edited values directly
+					if (edit.userExcluded) return;
+					earned = edit.modifiedEarned;
+					total = edit.modifiedTotal;
+				} else {
+					// Unmodified row — parse from DOM
+					const pointsCell = getCell(row, 'points');
+					if (!pointsCell) return;
+					const raw = (pointsCell.innerText || "").split("/").map(s => s.trim());
+					if (!isValid(raw[0], raw[1])) return;
+					earned = raw[0].toUpperCase() === "Z" ? 0 : parseFloat(raw[0]);
+					total = parseFloat(raw[1]);
+				}
 
-            } catch (error) { /* skip contribution */ }
-        });
-        
-        // Prevent negative values
-        if (totalEarned < 0) totalEarned = 0;
-        if (totalPossible < 0) totalPossible = 0;
-        
-        
-        const finalPercent = totalPossible > 0 
-            ? Math.round((totalEarned / totalPossible) * 100) 
-            : 0;
-        
-        showGrade(finalPercent, getLetterGrade(finalPercent));
-    } catch (error) {
-        /* silent */
-    }
+				if (Number.isFinite(earned) && Number.isFinite(total) && total > 0) {
+					totalEarned += earned;
+					totalPossible += total;
+				} else if (Number.isFinite(earned) && total === 0 && earned > 0) {
+					totalEarned += earned;
+				}
+			} catch (error) { /* skip row */ }
+		});
+
+		if (totalEarned < 0) totalEarned = 0;
+		if (totalPossible < 0) totalPossible = 0;
+
+		const finalPercent = totalPossible > 0
+			? Math.round((totalEarned / totalPossible) * 100)
+			: 0;
+
+		showGrade(finalPercent, getLetterGrade(finalPercent));
+	} catch (error) {
+		/* silent */
+	}
 }
     
     /**
@@ -1300,7 +1268,7 @@ function makeScoresEditable() {
             // Make score cell clickable
             scoreCell.style.cursor = "pointer";
             scoreCell.style.transition = "background-color 0.2s ease";
-            scoreCell.title = "Click to edit score";
+            scoreCell.title = "Click to edit score (type 'x' to exclude)";
 
             // Add hover effect
             scoreCell.addEventListener("mouseenter", () => {
@@ -1490,23 +1458,11 @@ function openScoreEditor(cell, rowId, row) {
                     .replace(/\s+/g, " ")
                     .trim()
                     .toUpperCase();
-                
-                
-                // Only check if the SCORE CELL itself contains excluded patterns
-                // Don't check other columns to avoid false positives from "Excused" status columns
-                const scoreTextMatches = EXCLUDED_SCORE_PATTERNS.some((pattern) => pattern.test(currentText));
 
-                // Additional check: Make sure it's not a valid numeric score like "40/50"
-                const hasValidNumericScore = /\d+\s*\/\s*\d+/.test(currentText);
-
-                if (scoreTextMatches && !hasValidNumericScore) {
-                    wasExcluded = true;
-                    originalEarned = 0;
-                    const denominatorMatch = currentText.match(/\/\s*(\d+\.?\d*)/);
-                    if (denominatorMatch) {
-                        totalPoints = parseFloat(denominatorMatch[1]);
-                    }
-                }
+                const classification = classifyScoreText(currentText);
+                wasExcluded = classification.wasExcluded;
+                if (classification.earned !== null) originalEarned = classification.earned;
+                if (classification.total !== null) totalPoints = classification.total;
                 
                 if (originalEarned === null || totalPoints === null) {
                     let scoreMatch = currentText.match(/(\d+\.?\d*)\s*\/\s*(\d+\.?\d*)/);
@@ -1621,12 +1577,12 @@ function continueOpenEditor(cell, rowId, row, originalEarned, totalPoints, wasEx
         const container = document.createElement("div");
         container.style.cssText = getFlexContainerCSS();
         
-        // Create input field
+        // Create input field (text type so "x" can be typed to exclude)
         const input = document.createElement("input");
-        input.type = "number";
+        input.type = "text";
+        input.inputMode = "decimal";
         input.value = originalEarned;
-        input.step = "1";
-        input.min = "0";
+        input.placeholder = "x";
         input.style.cssText = `
             width: 45px;
             padding: 3px 5px;
@@ -1653,24 +1609,50 @@ function continueOpenEditor(cell, rowId, row, originalEarned, totalPoints, wasEx
         totalSpan.textContent = totalPoints;
         totalSpan.style.cssText = "font-weight: bold; font-size: 13px; line-height: 1;";
         
+        // Exclude button
+        const excludeBtn = document.createElement("button");
+        excludeBtn.textContent = "X";
+        excludeBtn.title = "Exclude this assignment";
+        excludeBtn.style.cssText = `
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 0 4px;
+            margin-left: 2px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: bold;
+            height: 18px;
+            line-height: 1;
+        `;
+        excludeBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            cell._fgsSkipBlurSave = true;
+            input.remove();
+            delete cell._fgsSkipBlurSave;
+            saveScoreEdit(cell, rowId, "x", totalPoints);
+        });
+
         // Build the structure
         container.appendChild(input);
         container.appendChild(slash);
         container.appendChild(totalSpan);
+        container.appendChild(excludeBtn);
         cell.appendChild(container);
-        
+
         // Focus and select
         setTimeout(() => {
             input.focus();
             input.select();
         }, 10);
-        
+
         // Save on blur (skip if cell is being re-opened to prevent glitch)
         input.addEventListener("blur", () => {
             if (cell._fgsSkipBlurSave) return;
             saveScoreEdit(cell, rowId, input.value, totalPoints);
         });
-        
+
         // Handle Enter key
         input.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
@@ -1746,7 +1728,8 @@ function getModifiedScores() {
             
             // Determine edit type
             const wasExcluded = editData.wasExcluded === true;
-            
+            const userExcluded = editData.userExcluded === true;
+
             // Original contributions: excluded rows counted as 0/0
             const originalEarned = wasExcluded
                 ? 0
@@ -1754,31 +1737,22 @@ function getModifiedScores() {
             const originalTotal = wasExcluded
                 ? 0
                 : (Number.isFinite(originalTotalRaw) ? originalTotalRaw : 0);
-            
-            // Modified contributions must always use entered values (fallback to original raw)
-            const originalTextValue = typeof editData.original === 'string' ? editData.original : '';
-            const modifiedEarned = Number.isFinite(modifiedEarnedRaw) ? modifiedEarnedRaw : originalEarned;
+
+            // Modified values: use entered values, fallback to originals
+            let modifiedEarned = Number.isFinite(modifiedEarnedRaw) ? modifiedEarnedRaw : originalEarned;
             let modifiedTotal = Number.isFinite(modifiedTotalRaw) ? modifiedTotalRaw : originalTotalRaw;
-            if (!Number.isFinite(modifiedTotal)) {
-                modifiedTotal = originalTotalRaw;
-            }
-            // Z scores: Focus already counts the denominator in the grade total.
-            // Since Z is treated as excluded (wasExcluded=true), the excluded path
-            // would add both earned AND total. Zero out modifiedTotal so only the
-            // new earned value is added — the denominator is already in the total.
-            const forceKeepOriginalDenominator = originalTextValue.trim().toUpperCase().startsWith('Z');
-            if (forceKeepOriginalDenominator) {
-                modifiedTotal = 0;
-            }
-            modifications.push({
-                originalEarned,
-                originalTotal,
-                modifiedEarned,
-                modifiedTotal,
+            if (!Number.isFinite(modifiedTotal)) modifiedTotal = originalTotalRaw;
+
+            // User-excluded: contributes nothing
+            if (userExcluded) { modifiedEarned = 0; modifiedTotal = 0; }
+
+            const mod = {
+                originalEarned, originalTotal,
+                modifiedEarned, modifiedTotal,
                 category: category.toLowerCase(),
-                rowId,
-                wasExcluded
-            });
+                rowId, wasExcluded, userExcluded
+            };
+            modifications.push(mod);
         });
         
         return modifications;
@@ -1794,6 +1768,56 @@ function getModifiedScores() {
  */
 function saveScoreEdit(cell, rowId, newEarned, totalPoints) {
     try {
+
+        // Handle "x" input — user wants to exclude this assignment from grade calculation
+        if (typeof newEarned === "string" && newEarned.trim().toLowerCase() === "x") {
+            const totalNum = parseFloat(totalPoints);
+            const editMeta = editedScores[rowId];
+            if (editMeta) {
+                editMeta.modified = "excluded";
+                editMeta.modifiedEarned = 0;
+                editMeta.modifiedTotal = 0;
+                editMeta.userExcluded = true;
+                if (!editMeta.classKey) {
+                    editMeta.classKey = getCurrentClassKey();
+                }
+            }
+            buildExcludedScoreCellUI(cell, totalNum, rowId);
+
+            // Clear percentage and letter grade cells
+            const row = editMeta && editMeta.row && editMeta.row.parentNode ? editMeta.row : document.querySelector(`[data-original-row-id="${rowId}"]`);
+            const percentCell = getCell(row, 'percent');
+            if (percentCell) {
+                if (!percentCell.getAttribute("data-original-percent-html")) {
+                    percentCell.setAttribute("data-original-percent-html", percentCell.innerHTML);
+                    percentCell.setAttribute("data-original-percent-text", percentCell.textContent.trim());
+                }
+                percentCell.textContent = "";
+                const excSpan = document.createElement("span");
+                excSpan.textContent = "Excluded";
+                excSpan.style.cssText = "color:#6c757d;font-style:italic;font-size:12px;";
+                percentCell.appendChild(excSpan);
+                percentCell.setAttribute("data-percent-modified", "true");
+            }
+            const letterCell = getCell(row, 'grade');
+            if (letterCell) {
+                if (!letterCell.getAttribute("data-original-letter-html")) {
+                    letterCell.setAttribute("data-original-letter-html", letterCell.innerHTML);
+                    letterCell.setAttribute("data-original-letter-text", letterCell.textContent.trim());
+                }
+                letterCell.textContent = "";
+                const dashSpan = document.createElement("span");
+                dashSpan.textContent = "--";
+                dashSpan.style.cssText = "color:#6c757d;font-style:italic;font-size:12px;";
+                letterCell.appendChild(dashSpan);
+                letterCell.setAttribute("data-letter-modified", "true");
+            }
+
+            const classKey = getCurrentClassKey();
+            recordEditAction(rowId, classKey);
+            debouncedCalculate();
+            return;
+        }
 
         // Handle empty string - treat as 0 for NG grades
         let earnedValue = newEarned;
@@ -1815,13 +1839,17 @@ function saveScoreEdit(cell, rowId, newEarned, totalPoints) {
 
         // Explicitly allow 0 as a valid value
         if (isNaN(earnedNum) || earnedNum < 0) {
-            showToast("Please enter a valid number (0 or greater).", "error");
+            showToast("Please enter a valid number (0 or greater), or 'x' to exclude.", "error");
             restoreOriginalScore(cell, rowId);
             return;
         }
 
         const editMeta = editedScores[rowId];
         if (editMeta) {
+            // Clear userExcluded if previously excluded and now entering a number
+            if (editMeta.userExcluded) {
+                editMeta.userExcluded = false;
+            }
             if (checkAndRestoreOriginal(editMeta, earnedNum, totalNum, cell, rowId)) return;
         }
 
@@ -1993,6 +2021,60 @@ function buildModifiedScoreCellUI(scoreCell, earnedNum, totalNum, rowId) {
     container.appendChild(totalSpan);
     container.appendChild(resetBtn);
     scoreCell.appendChild(container);
+}
+
+/**
+ * Builds the UI for a user-excluded score cell.
+ * Shows "X / total" in grey with a reset button.
+ */
+function buildExcludedScoreCellUI(scoreCell, totalNum, rowId) {
+	const originalHeight = scoreCell.offsetHeight;
+	scoreCell.textContent = "";
+	scoreCell.style.cssText = getEditorCellCSS(originalHeight) + ' cursor: pointer;';
+	scoreCell.title = "Click to edit | Right-click to reset (Excluded)";
+	scoreCell.setAttribute("data-score-modified", "true");
+
+	const container = document.createElement("div");
+	container.style.cssText = getFlexContainerCSS();
+
+	const xSpan = document.createElement("span");
+	xSpan.textContent = "X";
+	xSpan.style.cssText = "color: #6c757d; font-weight: bold; font-size: 13px; font-style: italic;";
+
+	const slash = document.createElement("span");
+	slash.textContent = "/";
+	slash.style.cssText = "font-size: 13px; color: #6c757d;";
+
+	const totalSpan = document.createElement("span");
+	totalSpan.textContent = formatNumber(totalNum);
+	totalSpan.style.cssText = "font-size: 13px; color: #6c757d;";
+
+	const resetBtn = document.createElement("button");
+	resetBtn.textContent = "\u21ba";
+	resetBtn.title = "Reset to original";
+	resetBtn.style.cssText = `
+		background: #6c757d;
+		color: white;
+		border: none;
+		border-radius: 3px;
+		padding: 0 3px;
+		margin-left: 4px;
+		cursor: pointer;
+		font-size: 11px;
+		font-weight: bold;
+		height: 18px;
+		line-height: 1;
+	`;
+	resetBtn.addEventListener("click", (e) => {
+		e.stopPropagation();
+		resetSingleScore(rowId, scoreCell);
+	});
+
+	container.appendChild(xSpan);
+	container.appendChild(slash);
+	container.appendChild(totalSpan);
+	container.appendChild(resetBtn);
+	scoreCell.appendChild(container);
 }
 
 /**
@@ -2676,6 +2758,7 @@ function resetSingleScore(rowId, cellOverride = null, fromUndo = false) {
                     originalEarned: editData.originalEarned,
                     total: editData.total,
                     wasExcluded: editData.wasExcluded,
+                    userExcluded: editData.userExcluded,
                     originalHTML: editData.originalHTML,
                     original: editData.original,
                     category: editData.category
@@ -2954,6 +3037,7 @@ function clearAllScoreEdits() {
                 const percentCell = getCell(row, 'percent');
                 if (!scoreCell) return;
 
+                const isUserExcluded = lastRedo.editData.userExcluded === true;
                 editedScores[lastRedo.rowId] = {
                         originalHTML: lastRedo.editData.originalHTML,
                         original: lastRedo.editData.original,
@@ -2962,7 +3046,8 @@ function clearAllScoreEdits() {
                         modifiedEarned: lastRedo.editData.modifiedEarned,
                         modifiedTotal: lastRedo.editData.modifiedTotal,
                         wasExcluded: lastRedo.editData.wasExcluded,
-                        modified: lastRedo.editData.modifiedEarned + '/' + lastRedo.editData.modifiedTotal,
+                        userExcluded: isUserExcluded,
+                        modified: isUserExcluded ? "excluded" : lastRedo.editData.modifiedEarned + '/' + lastRedo.editData.modifiedTotal,
                         row: row,
                         classKey: lastRedo.classKey,
                         category: lastRedo.editData.category || ""
@@ -2971,14 +3056,35 @@ function clearAllScoreEdits() {
                 const earnedNum = lastRedo.editData.modifiedEarned;
                 const totalNum = lastRedo.editData.modifiedTotal;
 
-                buildModifiedScoreCellUI(scoreCell, earnedNum, totalNum, lastRedo.rowId);
+                if (isUserExcluded) {
+                        buildExcludedScoreCellUI(scoreCell, lastRedo.editData.total, lastRedo.rowId);
+                        if (percentCell) {
+                                percentCell.textContent = "";
+                                const excSpan = document.createElement("span");
+                                excSpan.textContent = "Excluded";
+                                excSpan.style.cssText = "color:#6c757d;font-style:italic;font-size:12px;";
+                                percentCell.appendChild(excSpan);
+                                percentCell.setAttribute("data-percent-modified", "true");
+                        }
+                        const letterCell = getCell(row, 'grade');
+                        if (letterCell) {
+                                letterCell.textContent = "";
+                                const dashSpan = document.createElement("span");
+                                dashSpan.textContent = "--";
+                                dashSpan.style.cssText = "color:#6c757d;font-style:italic;font-size:12px;";
+                                letterCell.appendChild(dashSpan);
+                                letterCell.setAttribute("data-letter-modified", "true");
+                        }
+                } else {
+                        buildModifiedScoreCellUI(scoreCell, earnedNum, totalNum, lastRedo.rowId);
 
-                if (percentCell && totalNum > 0) {
-                        const calculatedPercent = (earnedNum / totalNum) * 100;
-                        updatePercentageCell(percentCell, calculatedPercent, lastRedo.rowId);
-                } else if (percentCell && totalNum === 0) {
-                        while (percentCell.firstChild) percentCell.removeChild(percentCell.firstChild);
-                        percentCell.style.cssText = "";
+                        if (percentCell && totalNum > 0) {
+                                const calculatedPercent = (earnedNum / totalNum) * 100;
+                                updatePercentageCell(percentCell, calculatedPercent, lastRedo.rowId);
+                        } else if (percentCell && totalNum === 0) {
+                                while (percentCell.firstChild) percentCell.removeChild(percentCell.firstChild);
+                                percentCell.style.cssText = "";
+                        }
                 }
 
                 scoreEditHistory.push({
