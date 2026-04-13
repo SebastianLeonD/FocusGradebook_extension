@@ -47,98 +47,133 @@
 </head>
 <body>
     <h1>Privacy Policy for Focus Grade Calculator</h1>
-    
+
     <p><strong>Effective Date:</strong> September 18, 2025<br>
-    <strong>Last Updated:</strong> September 18, 2025</p>
+    <strong>Last Updated:</strong> April 13, 2026</p>
 
     <h2>Overview</h2>
-    <p>Focus Grade Calculator is a Chrome extension that helps students calculate hypothetical grades within their Focus gradebook system. This privacy policy explains how we handle your data.</p>
+    <p>Focus Grade Calculator (the "Extension") is a Chrome extension that helps students calculate hypothetical grades within the Focus Student Information System (SIS) gradebook. This privacy policy describes what data we collect, how we handle it, how we store it, and how we share it.</p>
 
     <div class="highlight">
-        <strong>Key Point:</strong> This extension processes ALL data locally in your browser. We do not collect personal information or store your grades on external servers.
+        <strong>Key Point:</strong> This Extension processes grade data locally in your browser. We do not collect, transmit, or store your grades, personal information, or login credentials on any external server.
     </div>
 
-    <h2>Information We Collect</h2>
-
-    <h3>Information We DO NOT Collect</h3>
+    <h2>1. Data We Access and Process Locally</h2>
+    <p>The Extension reads the following data from Focus SIS gradebook pages to perform calculations. This data is processed entirely within your browser and is <strong>never transmitted</strong> to us or any third party:</p>
     <ul>
-        <li><strong>No Personal Information</strong>: We do not collect names, email addresses, phone numbers, or any personally identifiable information</li>
-        <li><strong>No Grade Data</strong>: Your actual grades and academic information remain private and are never transmitted or stored by our extension</li>
-        <li><strong>No Login Credentials</strong>: We never access or store your Focus login information</li>
-        <li><strong>No Browsing History</strong>: We only operate on Focus gradebook pages and do not track other websites</li>
+        <li><strong>Grade data</strong>: Assignment names, scores, point values, percentages, letter grades, and category information displayed on the gradebook page</li>
+        <li><strong>Class information</strong>: Course names and grading period labels visible on the page</li>
+        <li><strong>Grading structure</strong>: Category weights and grade scale thresholds shown on the page</li>
+    </ul>
+    <p>This data exists only in your browser's temporary memory (JavaScript runtime) and is automatically discarded when you navigate away from the page, close the tab, or refresh.</p>
+
+    <h2>2. Data We Store on Your Device</h2>
+    <p>The Extension stores the following data locally on your device using browser localStorage:</p>
+    <ul>
+        <li><strong>Theme preference</strong>: Your selected visual theme (stored under the key <code>fgs-selected-theme</code>). This is a single text value such as "default" or "dark" and contains no personal information.</li>
+    </ul>
+    <p>This data remains on your device, is never transmitted externally, and can be cleared at any time by clearing your browser data or uninstalling the Extension.</p>
+
+    <h2>3. Data We Collect and Transmit</h2>
+    <p>The Extension collects data <strong>only</strong> when you voluntarily submit feedback through the built-in feedback form. No data is collected automatically or without your action.</p>
+    <p>When you choose to submit feedback, the following anonymous data is sent:</p>
+    <ul>
+        <li><strong>Feedback message</strong>: The text you type into the feedback form</li>
+        <li><strong>Extension version</strong>: The version number of the Extension you are using</li>
+        <li><strong>Page URL</strong>: The origin and path of the Focus gradebook page (e.g., <code>https://example.focusschoolsoftware.com/focus/Modules.php</code>). This does not include query parameters that could identify you.</li>
+        <li><strong>User agent string</strong>: Your browser type and version (e.g., "Chrome 120 on Windows 10")</li>
+        <li><strong>Timestamp</strong>: The date and time of submission</li>
+    </ul>
+    <p>This feedback is completely anonymous. We do not collect your name, email address, student ID, IP address, or any other personally identifiable information alongside the feedback.</p>
+
+    <h3>Data We Do NOT Collect</h3>
+    <ul>
+        <li>Names, email addresses, phone numbers, or any personally identifiable information</li>
+        <li>Grades, scores, GPA, or any academic data</li>
+        <li>Login credentials or authentication tokens</li>
+        <li>Browsing history or activity on other websites</li>
+        <li>Cookies or tracking identifiers</li>
     </ul>
 
-    <h3>Information We DO Collect (Anonymous Only)</h3>
-    <p><strong>Feedback System</strong>: When you voluntarily submit feedback through our extension:</p>
+    <h2>4. How We Use Collected Data</h2>
+    <p>The anonymous feedback data described in Section 3 is used solely to:</p>
     <ul>
-        <li>Anonymous feedback messages you choose to send</li>
-        <li>Browser type and extension version (for technical support)</li>
-        <li>Page URL (only Focus gradebook pages)</li>
-        <li>Timestamp of feedback submission</li>
+        <li>Identify and fix bugs in the Extension</li>
+        <li>Understand what features users need</li>
+        <li>Improve the Extension's functionality and user experience</li>
     </ul>
-    <p>This feedback is sent via Web3Forms service and is completely anonymous - we cannot identify who sent it.</p>
+    <p>We do not use collected data for advertising, profiling, analytics, or any purpose other than improving the Extension.</p>
 
-    <h2>How We Use Information</h2>
-
-    <h3>Local Data Processing</h3>
+    <h2>5. Data Sharing</h2>
+    <p>We do not sell, trade, rent, or share user data with any third party, except as described below:</p>
     <ul>
-        <li>All grade calculations happen locally in your browser</li>
-        <li>Hypothetical assignments you create are stored temporarily in your browser's memory</li>
-        <li>No data is sent to external servers except voluntary anonymous feedback</li>
+        <li><strong>Web3Forms</strong>: When you voluntarily submit feedback, the anonymous feedback data listed in Section 3 is transmitted to Web3Forms, a form submission service, which delivers it to the developer's email inbox. Web3Forms processes this data according to their <a href="https://web3forms.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</li>
     </ul>
+    <p>No other third-party services receive any data from the Extension. The Extension does not include any analytics, advertising, or tracking SDKs.</p>
 
-    <h3>Feedback Data</h3>
-    <p>Anonymous feedback helps us:</p>
+    <h2>6. Data Storage and Security</h2>
+
+    <h3>Local Data (on your device)</h3>
     <ul>
-        <li>Fix bugs and improve the extension</li>
-        <li>Understand user needs</li>
-        <li>Provide better support</li>
+        <li>Grade calculation data is held in temporary browser memory only and is cleared when you navigate away, close the tab, or refresh the page</li>
+        <li>Theme preference is stored in localStorage and persists until you clear browser data or uninstall the Extension</li>
+        <li>No data is written to your file system or synced to other devices</li>
     </ul>
 
-    <h2>Data Storage and Security</h2>
+    <h3>Feedback Data (transmitted externally)</h3>
     <ul>
-        <li><strong>Local Storage Only</strong>: All your grade calculation data stays in your browser</li>
-        <li><strong>No External Databases</strong>: We don't maintain any servers or databases with your information</li>
-        <li><strong>Automatic Cleanup</strong>: Calculation data is cleared when you close your browser or switch classes</li>
+        <li>Feedback is transmitted over HTTPS (encrypted in transit) to the Web3Forms API</li>
+        <li>We do not operate our own servers or databases — feedback is delivered to the developer's email and stored according to Web3Forms' data retention practices</li>
+        <li>Because feedback is anonymous, we cannot retrieve, modify, or delete specific submissions after they are sent</li>
     </ul>
 
-    <h2>Third-Party Services</h2>
-    <p><strong>Web3Forms</strong>: Used only for anonymous feedback submission</p>
+    <h3>Security Measures</h3>
     <ul>
-        <li>Privacy Policy: <a href="https://web3forms.com/privacy" target="_blank" rel="noopener noreferrer">https://web3forms.com/privacy</a></li>
-        <li>Data sent is anonymous and voluntary only</li>
+        <li>The Extension requests only the <code>activeTab</code> permission, limiting its access to the current tab when activated</li>
+        <li>The Extension runs only on Focus SIS gradebook pages (<code>focusschoolsoftware.com</code>)</li>
+        <li>All external data transmission uses HTTPS encryption</li>
+        <li>No remote code is loaded or executed</li>
     </ul>
 
-    <h2>Your Rights and Choices</h2>
+    <h2>7. Data Retention</h2>
     <ul>
-        <li><strong>Opt-out of Feedback</strong>: Feedback submission is completely voluntary</li>
-        <li><strong>Data Control</strong>: All calculation data stays in your browser under your control</li>
-        <li><strong>Uninstall</strong>: Remove the extension at any time to stop all data processing</li>
+        <li><strong>Local calculation data</strong>: Retained only in temporary memory for the duration of the page session. Not persisted.</li>
+        <li><strong>Theme preference</strong>: Retained in localStorage indefinitely until manually cleared or the Extension is uninstalled.</li>
+        <li><strong>Feedback data</strong>: Retained by Web3Forms according to their retention policy. Because feedback is anonymous and delivered via email, the developer retains it for as long as needed for Extension development and may delete it at any time.</li>
     </ul>
 
-    <h2>Children's Privacy</h2>
-    <p>This extension is designed for educational use. We do not knowingly collect personal information from anyone, including minors. All data processing happens locally in the user's browser.</p>
+    <h2>8. Your Rights and Choices</h2>
+    <ul>
+        <li><strong>Feedback is optional</strong>: You are never required to submit feedback. The Extension functions fully without it.</li>
+        <li><strong>Control your local data</strong>: Clear localStorage or browser data at any time to remove the stored theme preference.</li>
+        <li><strong>Uninstall</strong>: Remove the Extension at any time from <code>chrome://extensions</code> to stop all data processing and delete all locally stored data.</li>
+        <li><strong>Request information</strong>: Contact us (see Section 12) with any questions about your data.</li>
+    </ul>
 
-    <h2>Changes to This Policy</h2>
-    <p>We may update this privacy policy. Changes will be posted with a new "Last Updated" date. Continued use of the extension after changes constitutes acceptance of the updated policy.</p>
+    <h2>9. Children's Privacy</h2>
+    <p>This Extension is designed for educational use by students. We do not knowingly collect personal information from children or any other users. The only data collected (voluntary anonymous feedback) contains no personally identifiable information. All grade data processing occurs locally in the browser and is never transmitted externally.</p>
+
+    <h2>10. Changes to This Policy</h2>
+    <p>We may update this privacy policy from time to time. When we do, we will update the "Last Updated" date at the top of this page. We encourage you to review this policy periodically. Continued use of the Extension after changes are posted constitutes your acceptance of the updated policy.</p>
+
+    <h2>11. Compliance</h2>
+    <p>This Extension and privacy policy are designed to comply with:</p>
+    <ul>
+        <li>The <a href="https://developer.chrome.com/docs/webstore/program-policies/" target="_blank" rel="noopener noreferrer">Chrome Web Store Developer Program Policies</a></li>
+        <li>The Chrome Web Store <a href="https://developer.chrome.com/docs/webstore/program-policies/user-data-faq/" target="_blank" rel="noopener noreferrer">User Data Policy</a></li>
+        <li>General privacy best practices for browser extensions</li>
+    </ul>
 
     <div class="contact">
-        <h2>Contact Information</h2>
-        <p>For questions about this privacy policy or the extension:</p>
-        <p><strong>Email</strong>: sebastian.08ld@gmail.com<br>
-        <strong>Subject Line</strong>: Privacy Policy Question</p>
+        <h2>12. Contact Information</h2>
+        <p>If you have questions about this privacy policy, your data, or the Extension, please contact:</p>
+        <p><strong>Developer</strong>: Sebastian Leon<br>
+        <strong>Email</strong>: <a href="mailto:sebastian.08ld@gmail.com">sebastian.08ld@gmail.com</a><br>
+        <strong>Subject Line</strong>: Focus Grade Calculator — Privacy Policy Question</p>
     </div>
 
-    <h2>Compliance</h2>
-    <p>This extension complies with:</p>
-    <ul>
-        <li>Chrome Web Store Developer Policies</li>
-        <li>General privacy best practices</li>
-        <li>Educational technology privacy standards</li>
-    </ul>
-
     <div class="highlight">
-        <strong>Summary</strong>: Focus Grade Calculator processes all data locally in your browser, collects no personal information, and only sends anonymous feedback when you choose to provide it. Your academic data remains completely private.
+        <strong>Summary:</strong> Focus Grade Calculator processes all grade data locally in your browser. The only data transmitted externally is anonymous feedback that you voluntarily submit. We do not collect, store, or share any personal information, grade data, or browsing activity.
     </div>
 </body>
 </html>
