@@ -116,18 +116,15 @@
 
                 // Configure interface based on auto-detected type
                 setTimeout(() => {
-                const categoryInput = document.getElementById("fgs-category-input");
                 const categoryContainer = document.getElementById("fgs-category-container");
 
                 if (mode === "weighted") {
-                        if (categoryInput) categoryInput.style.display = "none";
                         if (categoryContainer) {
                         categoryContainer.style.display = "block";
                         populateCategories();
                         }
                         saveOriginalCategoryData();
                 } else {
-                        if (categoryInput) categoryInput.style.display = "block";
                         if (categoryContainer) categoryContainer.style.display = "none";
                 }
 
@@ -691,6 +688,42 @@
                         safeAddListener("fgs-undo", "click", undo);
                         safeAddListener("fgs-redo", "click", redo);
 
+                        // Keyboard shortcuts: Ctrl/Cmd+Z undo, Ctrl+Y or Ctrl/Cmd+Shift+Z redo, Escape closes topmost overlay
+                        document.addEventListener("keydown", function (e) {
+                                try {
+                                        if (!floatingPopup || floatingPopup.style.display === "none") return;
+                                        const t = e.target;
+                                        const isTyping = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+                                        if (e.key === "Escape" && !isTyping) {
+                                                const backdrop = document.getElementById("fgs-full-tutorial-backdrop")
+                                                        || document.getElementById("fgs-tutorial-backdrop")
+                                                        || document.getElementById("fgs-new-features-backdrop");
+                                                if (backdrop) {
+                                                        backdrop.click();
+                                                        return;
+                                                }
+                                                const settingsDropdown = document.getElementById("fgs-settings-dropdown");
+                                                if (settingsDropdown && settingsDropdown.style.display === "block") {
+                                                        toggleSettingsDropdown();
+                                                        return;
+                                                }
+                                                floatingPopup.style.display = "none";
+                                                return;
+                                        }
+                                        if (isTyping || !(e.ctrlKey || e.metaKey)) return;
+                                        const key = e.key.toLowerCase();
+                                        if (key === "z" && !e.shiftKey) {
+                                                e.preventDefault();
+                                                undo();
+                                        } else if (key === "y" || (key === "z" && e.shiftKey)) {
+                                                e.preventDefault();
+                                                redo();
+                                        }
+                                } catch (error) {
+                                        // Silent error handling for production
+                                }
+                        });
+
                         // Settings theme selector
                         safeAddListener("fgs-popup-theme-select", "change", handleSettingsThemeChange);
                         safeAddListener("fgs-settings-back", "click", () => {
@@ -1105,6 +1138,16 @@
                         const header = document.getElementById("fgs-drag-header");
                         if (!header) return;
                         let startX, startY, initialLeft, initialTop;
+
+                        // Restore saved position, clamped to the current viewport
+                        try {
+                                const saved = JSON.parse(localStorage.getItem("fgs-popup-position"));
+                                if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
+                                        floatingPopup.style.left = Math.max(0, Math.min(window.innerWidth - floatingPopup.offsetWidth, saved.left)) + "px";
+                                        floatingPopup.style.top = Math.max(0, Math.min(window.innerHeight - floatingPopup.offsetHeight, saved.top)) + "px";
+                                        floatingPopup.style.right = "auto";
+                                }
+                        } catch (error) { /* ignore corrupt saved position */ }
                         header.addEventListener("mousedown", function (e) {
                                 try {
                                         isDragging = true;
@@ -1138,6 +1181,10 @@
                                 isDragging = false;
                                 document.removeEventListener("mousemove", handleDrag);
                                 document.removeEventListener("mouseup", stopDrag);
+                                try {
+                                        const rect = floatingPopup.getBoundingClientRect();
+                                        localStorage.setItem("fgs-popup-position", JSON.stringify({ left: rect.left, top: rect.top }));
+                                } catch (error) { /* localStorage unavailable */ }
                         }
 
                         // Keep popup in viewport on window resize

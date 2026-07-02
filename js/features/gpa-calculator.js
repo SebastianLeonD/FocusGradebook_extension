@@ -529,7 +529,7 @@ function extractBaselineCoreCredits() {
 
                 // S1: count credit and compute quality points
                 if (hasS1) {
-                    const letter = normalizeBCPSLetter(s1Raw);
+                    const letter = extractLetterFromGradeCell(s1Cell);
                     if (letter && letter !== 'EX') {
                         coreCredits += perSemesterCredits;
                         coreQualityPoints += getCorePoints(letter, courseType) * perSemesterCredits;
@@ -538,7 +538,7 @@ function extractBaselineCoreCredits() {
 
                 // S2: count credit and compute quality points
                 if (hasS2) {
-                    const letter = normalizeBCPSLetter(s2Raw);
+                    const letter = extractLetterFromGradeCell(s2Cell);
                     if (letter && letter !== 'EX') {
                         coreCredits += perSemesterCredits;
                         coreQualityPoints += getCorePoints(letter, courseType) * perSemesterCredits;
@@ -551,7 +551,7 @@ function extractBaselineCoreCredits() {
                         || row.querySelector('[data-field="mp_year"] a') || row.querySelector('[data-field="mp_year"]');
                     const fyRaw = fyCell ? fyCell.textContent.trim() : '';
                     if (fyRaw && fyRaw !== 'NG' && fyRaw !== '--' && fyRaw !== 'P' && fyRaw !== 'F*') {
-                        const letter = normalizeBCPSLetter(fyRaw);
+                        const letter = extractLetterFromGradeCell(fyCell);
                         if (letter && letter !== 'EX') {
                             coreCredits += rowCredits;
                             coreQualityPoints += getCorePoints(letter, courseType) * rowCredits;
@@ -2659,11 +2659,11 @@ function renderResults() {
         
         const cumulativeBase = baseline?.cumulativeGPA ?? null;
         const cumulativeNew = projected.cumulativeProjected ?? projected.unweighted ?? null;
-        const cumulativeDelta = (cumulativeBase !== null && cumulativeNew !== null) ? cumulativeNew - cumulativeBase : null;
+        const cumulativeDelta = projected.cumulativeDelta ?? ((cumulativeBase !== null && cumulativeNew !== null) ? cumulativeNew - cumulativeBase : null);
         
         const weightedBase = baseline?.weightedGPA ?? null;
         const weightedNew = projected.weightedProjected ?? projected.weighted ?? null;
-        const weightedDelta = (weightedBase !== null && weightedNew !== null) ? weightedNew - weightedBase : null;
+        const weightedDelta = projected.weightedDelta ?? ((weightedBase !== null && weightedNew !== null) ? weightedNew - weightedBase : null);
         
         const summaryRows = [];
         if (cumulativeBase !== null || cumulativeNew !== null) {

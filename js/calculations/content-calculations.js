@@ -357,19 +357,16 @@ function handleAdd() {
         const earnedInput = document.getElementById("fgs-earned");
         const totalInput = document.getElementById("fgs-total");
         const categoryDropdown = document.getElementById("fgs-category-dropdown");
-        const categoryInput = document.getElementById("fgs-category-input");
         if (!earnedInput || !totalInput) return;
-        
+
         const name = nameInput ? nameInput.value.trim() : "";
         const earned = earnedInput.value;
         const total = totalInput.value;
         const isWeighted = mode === "weighted";
         let category = "";
-        
+
         if (isWeighted && categoryDropdown) {
             category = categoryDropdown.value;
-        } else if (!isWeighted && categoryInput) {
-            category = categoryInput.value.trim();
         }
         if (!earned || !total || (isWeighted && !category)) {
             showToast("Please fill out all required fields.", "warning");
@@ -577,9 +574,9 @@ function calculate() {
             } catch (error) { /* skip category */ }
         }
         
-        const finalPercent = usedWeightSum > 0 
-            ? Math.round((final / (usedWeightSum / 100)) * 100) 
-            : 100;
+        const finalPercent = usedWeightSum > 0
+            ? Math.round((final / (usedWeightSum / 100)) * 100)
+            : 0;
         
         updateCategoryCells(categoryMap);
         showWeightedGrade(finalPercent, getLetterGrade(finalPercent));
@@ -3634,7 +3631,7 @@ function getAssignmentDetailCSS() {
             left: 230px;
             right: 0;
             bottom: 0;
-            z-index: 1000;
+            z-index: 10500;
             display: none;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
         }

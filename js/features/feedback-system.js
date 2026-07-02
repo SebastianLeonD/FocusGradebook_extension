@@ -63,6 +63,14 @@ function setupFeedbackEvents(retries = 0) {
         // Send feedback event
         sendButton.addEventListener('click', handleSendFeedback);
 
+        // Ctrl/Cmd+Enter submits from the textarea
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !sendButton.disabled) {
+                e.preventDefault();
+                handleSendFeedback();
+            }
+        });
+
         // Enable/disable send button based on textarea content, update live character counter
         textarea.addEventListener('input', () => {
             const length = textarea.value.length;

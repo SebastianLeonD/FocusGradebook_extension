@@ -210,7 +210,7 @@ User clicks extension icon
 
 **Treatment**:
 - X, NG, *, EXC, checkmark: `wasExcluded = true` — when edited, BOTH earned and total are added (they contributed 0/0 originally)
-- Z: `wasExcluded = true` BUT Focus already counts Z's denominator in the grade total. Special handling in `getModifiedScores()` zeroes `modifiedTotal` so only earned is added
+- Z: `wasExcluded = false` with `earned = 0, total = N` (via `classifyScoreText()`) — Focus counts Z's denominator in the grade total, so Z/N contributes 0/N like a normal zero. No special-casing in `getModifiedScores()`; the uniform delta formula (`modified − original`) handles it (see ISSUES_LOG #008)
 
 ### Key Behavior: Undo/Redo with Hypotheticals
 

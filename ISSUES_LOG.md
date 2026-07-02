@@ -103,6 +103,14 @@
 - **Files Changed**: `js/ui/popup-html.js`
 - **Lesson**: Template placeholders that JS fully overwrites are dead code — either wire them or delete them. Grep for the element's ID before assuming a template element is live.
 
+### #011 — Weighted mode showed "100% A" when no category had any data
+- **Date**: 2026-07-02
+- **Symptom**: In a weighted class where every category showed "No Grades" (0/0), adding a 0/0 hypothetical made the popup display "Hypothetical: 100% A" while the category cells correctly showed 0% F.
+- **Root Cause**: `calculateWeighted()`'s final-percent fallback was `usedWeightSum > 0 ? ... : 100` — it fabricated a perfect grade when no category contributed weight. The unweighted path's equivalent fallback correctly defaults to 0.
+- **Fix**: Changed the fallback from `100` to `0` so both modes agree.
+- **Files Changed**: `js/calculations/content-calculations.js`
+- **Lesson**: Fallback/default values in parallel code paths (weighted vs unweighted) must agree. When a display is derived from per-category data, its empty-state default must match the per-category empty state.
+
 ---
 
 ## Patterns to Watch For

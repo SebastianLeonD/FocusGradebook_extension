@@ -1990,6 +1990,17 @@ function generateThemedCSS(theme) {
             display: none;
         }
         
+        .fgs-feedback-category {
+            background: ${theme.isTransparent ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'};
+            border: 1px solid ${theme.isTransparent ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'};
+            color: ${theme.textColor};
+        }
+
+        .fgs-feedback-category option {
+            background: ${theme.isTransparent ? '#ffffff' : '#2c2c3a'};
+            color: ${theme.isTransparent ? '#000000' : '#f0f0f0'};
+        }
+
         .fgs-feedback-textarea {
             width: 100%;
             min-height: 50px;
