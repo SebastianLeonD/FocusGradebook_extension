@@ -18,7 +18,7 @@ Every session, follow this order:
 - **UI**: All injected via JS template strings — no separate HTML/CSS for the popup
 - **APIs**: Chrome Extensions API (tabs, runtime, action), Web3Forms (anonymous feedback)
 - **Target site**: Focus Student Information System (`focusschoolsoftware.com`)
-- **Version**: 1.7.2 (published on Chrome Web Store)
+- **Version**: 1.7.3 (published on Chrome Web Store)
 - **Indentation**: Tabs (not spaces)
 
 ## Project Structure
