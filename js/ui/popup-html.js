@@ -181,7 +181,6 @@ function getPopupHTML() {
 
                         <div class="fgs-gpa-info">
                             <p>BCPS weighting: Q1 37.5% • Q2 37.5% • Exam 25%</p>
-                            <p id="fgs-gpa-class-count">• 0 classes calculated</p>
                             <p>• Honors +1 • AP/AICE/IB/DE +2 (C or higher)</p>
                         </div>
                         <div class="fgs-gpa-navigation">
@@ -362,9 +361,15 @@ function getPopupHTML() {
                     <button class="fgs-feedback-toggle" id="fgs-feedback-toggle" aria-expanded="false" aria-controls="fgs-feedback-content" aria-label="Toggle feedback form">+</button>
                 </div>
                 <div class="fgs-feedback-content collapsed" id="fgs-feedback-content">
-                    <textarea id="fgs-feedback-text" class="fgs-feedback-textarea" placeholder="Found a bug? Have a suggestion? Type your message here..." rows="2"></textarea>
+                    <select id="fgs-feedback-category" class="fgs-feedback-category" aria-label="Feedback category" style="width:100%;margin-bottom:6px;font-size:12px;padding:4px;border-radius:4px;">
+                        <option value="Suggestion">💡 Suggestion</option>
+                        <option value="Bug">🐛 Bug report</option>
+                        <option value="Other">💬 Other</option>
+                    </select>
+                    <textarea id="fgs-feedback-text" class="fgs-feedback-textarea" placeholder="Found a bug? Have a suggestion? Type your message here..." rows="2" maxlength="1000"></textarea>
                     <div class="fgs-feedback-actions">
                         <button id="fgs-send-feedback" class="fgs-feedback-send" disabled><span aria-hidden="true">📧</span> Send</button>
+                        <span id="fgs-feedback-counter" class="fgs-feedback-counter" aria-hidden="true" style="font-size:11px;opacity:0.6;margin-left:auto;">0/1000</span>
                         <span id="fgs-feedback-status" class="fgs-feedback-status" role="status" aria-live="polite"></span>
                     </div>
                 </div>

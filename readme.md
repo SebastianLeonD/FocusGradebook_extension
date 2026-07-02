@@ -52,4 +52,4 @@ See [license.txt](license.txt) for full terms.
 
 ---
 
-**Copyright &copy; Sebastian Leon 2025**
+**Copyright &copy; Sebastian Leon 2026**

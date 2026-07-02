@@ -18,7 +18,7 @@ Every session, follow this order:
 - **UI**: All injected via JS template strings — no separate HTML/CSS for the popup
 - **APIs**: Chrome Extensions API (tabs, runtime, action), Web3Forms (anonymous feedback)
 - **Target site**: Focus Student Information System (`focusschoolsoftware.com`)
-- **Version**: 1.7.0 (published on Chrome Web Store)
+- **Version**: 1.7.2 (published on Chrome Web Store)
 - **Indentation**: Tabs (not spaces)
 
 ## Project Structure
@@ -34,23 +34,25 @@ focus-grade-calculator/
 ├── 16.png / 32.png / 48.png / 128.png     # Extension icons
 ├── popup/
 │   ├── wrong_page.html                    # Shown when clicked on non-Focus pages
+│   ├── focus_grades_instructions.jpg      # Screenshot used by wrong_page.html
+│   ├── focus_portal_instructions.jpg      # Screenshot used by wrong_page.html
 │   └── *.mp4                              # Tutorial videos (web accessible)
 ├── js/
 │   ├── core/
 │   │   ├── background.js                  # Service worker: icon behavior, message routing
-│   │   ├── content-main.js                # Popup lifecycle, drag-drop, event wiring (~1400 lines)
+│   │   ├── content-main.js                # Popup lifecycle, drag-drop, event wiring (~1200 lines)
 │   │   └── content-utilities.js           # Global state, grade utils, DOM helpers (~440 lines)
 │   ├── calculations/
-│   │   └── content-calculations.js        # Grade engine, hypotheticals, undo/redo, editing (~4000 lines)
+│   │   └── content-calculations.js        # Grade engine, hypotheticals, undo/redo, editing (~3800 lines)
 │   ├── features/
-│   │   ├── gpa-calculator.js              # GPA calc with BCPS formula (~2000 lines)
+│   │   ├── gpa-calculator.js              # GPA calc with BCPS formula (~2800 lines)
 │   │   ├── feedback-system.js             # Anonymous feedback via Web3Forms (~340 lines)
 │   │   └── help-modal/
 │   │       ├── help-modal-html.js         # Help modal HTML template
 │   │       └── help-modal-css.js          # Help modal CSS template
 │   └── ui/
-│       ├── popup-html.js                  # Main popup HTML template (~800 lines)
-│       └── theme-system.js               # 9 themes, CSS generation (~1000 lines)
+│       ├── popup-html.js                  # Main popup HTML template (~375 lines)
+│       └── theme-system.js               # 9 themes, CSS generation (~2500 lines)
 └── .claude/
     ├── errors.md                          # AI error log (check before editing)
     └── settings.local.json                # Local Claude settings
@@ -135,7 +137,7 @@ Files depend on earlier scripts' globals. Changing this order will break the ext
 
 1. Update `version` in `manifest.json`
 2. Run `node --check` on all JS files
-3. Zip the project directory (excluding `.claude/`, `advertising-video/`, `.git/`)
+3. Zip ONLY the extension files: `zip -r focus-grade-calculator-v<version>.zip manifest.json 16.png 32.png 48.png 128.png js popup -x "*.DS_Store"` (never zip the whole directory — `.git/`, `advertising-video/`, docs, and old zips don't belong in the package)
 4. Upload to [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole)
 5. Submit for review
 

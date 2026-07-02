@@ -95,6 +95,14 @@
 - **Files Changed**: `js/calculations/content-calculations.js`
 - **Lesson**: Always check if modifications exist before displaying hypothetical results. The display lifecycle must match the data lifecycle — when data is cleared, the display must be cleared too.
 
+### #010 — GPA results template showed dead "• 0 classes calculated" line
+- **Date**: 2026-07-02
+- **Symptom**: The GPA Step 2 template in `popup-html.js` contained a hardcoded `<p id="fgs-gpa-class-count">• 0 classes calculated</p>` that no JS ever updated.
+- **Root Cause**: `renderResults()` in `gpa-calculator.js` replaces the entire `.fgs-gpa-info` block via `textContent` with the real count ("Calculating N classes • M skipped") before Step 2 is shown, so the template line was unreachable placeholder text — dead code masquerading as a display element.
+- **Fix**: Deleted the dead `<p>` from the template. The real count comes from `renderResults()`.
+- **Files Changed**: `js/ui/popup-html.js`
+- **Lesson**: Template placeholders that JS fully overwrites are dead code — either wire them or delete them. Grep for the element's ID before assuming a template element is live.
+
 ---
 
 ## Patterns to Watch For

@@ -2758,7 +2758,6 @@ function adjustPopupSize() {
 
 function determineActiveInterface() {
     try {
-        const modeSelection = document.getElementById('fgs-mode-selection');
         const calculatorForm = document.getElementById('fgs-calculator-form');
         const gpaCalculator = document.getElementById('fgs-gpa-calculator');
         

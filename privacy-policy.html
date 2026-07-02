@@ -49,23 +49,23 @@
     <h1>Privacy Policy for Focus Grade Calculator</h1>
 
     <p><strong>Effective Date:</strong> September 18, 2025<br>
-    <strong>Last Updated:</strong> April 13, 2026</p>
+    <strong>Last Updated:</strong> July 2, 2026</p>
 
     <h2>Overview</h2>
-    <p>Focus Grade Calculator (the "Extension") is a Chrome extension that helps students calculate hypothetical grades within the Focus Student Information System (SIS) gradebook. This privacy policy describes what data we collect, how we handle it, how we store it, and how we share it.</p>
+    <p>Focus Grade Calculator (the "Extension") is a Chrome extension that helps students calculate hypothetical grades within the Focus Student Information System (SIS) gradebook. This privacy policy describes what user data we collect, how we handle it, how we store it, and how we share it.</p>
 
     <div class="highlight">
-        <strong>Key Point:</strong> This Extension processes grade data locally in your browser. We do not collect, transmit, or store your grades, personal information, or login credentials on any external server.
+        <strong>Key Point:</strong> This Extension processes grade data locally in your browser. We do not collect, transmit, or store your grades, personal information, or login credentials on any external server. The only data transmitted externally is anonymous diagnostic information you voluntarily submit through the feedback form.
     </div>
 
-    <h2>1. Data We Access and Process Locally</h2>
-    <p>The Extension reads the following data from Focus SIS gradebook pages to perform calculations. This data is processed entirely within your browser and is <strong>never transmitted</strong> to us or any third party:</p>
+    <h2>1. Data We Access and Process Locally (Website Content)</h2>
+    <p>The Extension reads the following data from Focus SIS gradebook pages to perform grade calculations. This data is classified as <strong>website content</strong> under Chrome Web Store data categories. It is processed entirely within your browser and is <strong>never transmitted</strong> to us or any third party:</p>
     <ul>
         <li><strong>Grade data</strong>: Assignment names, scores, point values, percentages, letter grades, and category information displayed on the gradebook page</li>
         <li><strong>Class information</strong>: Course names and grading period labels visible on the page</li>
         <li><strong>Grading structure</strong>: Category weights and grade scale thresholds shown on the page</li>
     </ul>
-    <p>This data exists only in your browser's temporary memory (JavaScript runtime) and is automatically discarded when you navigate away from the page, close the tab, or refresh.</p>
+    <p>This data exists only in your browser's temporary memory (JavaScript runtime) and is automatically discarded when you navigate away from the page, close the tab, or refresh. It is never written to disk, synced across devices, or made accessible to any server.</p>
 
     <h2>2. Data We Store on Your Device</h2>
     <p>The Extension stores the following data locally on your device using browser localStorage:</p>
@@ -75,16 +75,16 @@
     <p>This data remains on your device, is never transmitted externally, and can be cleared at any time by clearing your browser data or uninstalling the Extension.</p>
 
     <h2>3. Data We Collect and Transmit</h2>
-    <p>The Extension collects data <strong>only</strong> when you voluntarily submit feedback through the built-in feedback form. No data is collected automatically or without your action.</p>
-    <p>When you choose to submit feedback, the following anonymous data is sent:</p>
+    <p>The Extension collects and transmits data <strong>only</strong> when you voluntarily submit feedback through the built-in feedback form. No data is ever collected automatically, passively, or without your explicit action.</p>
+    <p>When you choose to submit feedback, the following data is sent to an external service:</p>
     <ul>
         <li><strong>Feedback message</strong>: The text you type into the feedback form</li>
         <li><strong>Extension version</strong>: The version number of the Extension you are using</li>
-        <li><strong>Page URL</strong>: The origin and path of the Focus gradebook page (e.g., <code>https://example.focusschoolsoftware.com/focus/Modules.php</code>). This does not include query parameters that could identify you.</li>
-        <li><strong>User agent string</strong>: Your browser type and version (e.g., "Chrome 120 on Windows 10")</li>
+        <li><strong>Page URL</strong>: The domain and path of the Focus gradebook page (e.g., <code>https://example.focusschoolsoftware.com/focus/Modules.php</code>). The domain portion identifies the school district, but query parameters (which may contain student-specific identifiers) are excluded.</li>
+        <li><strong>User agent string</strong>: Your browser type, version, and operating system (e.g., "Chrome 120 on Windows 10")</li>
         <li><strong>Timestamp</strong>: The date and time of submission</li>
     </ul>
-    <p>This feedback is completely anonymous. We do not collect your name, email address, student ID, IP address, or any other personally identifiable information alongside the feedback.</p>
+    <p>We do not collect your name, email address, student ID, IP address, grades, or any other personally identifiable information. Feedback is anonymous — we cannot identify who sent it.</p>
 
     <h3>Data We Do NOT Collect</h3>
     <ul>
@@ -129,10 +129,11 @@
 
     <h3>Security Measures</h3>
     <ul>
-        <li>The Extension requests only the <code>activeTab</code> permission, limiting its access to the current tab when activated</li>
-        <li>The Extension runs only on Focus SIS gradebook pages (<code>focusschoolsoftware.com</code>)</li>
-        <li>All external data transmission uses HTTPS encryption</li>
+        <li>The Extension requests the <code>activeTab</code> permission (to activate when you click the extension icon) and <code>host_permissions</code> for <code>*.focusschoolsoftware.com</code> (to inject the grade calculator interface and read gradebook data on Focus SIS pages). These are the only permissions requested.</li>
+        <li>Content scripts run only on Focus SIS gradebook pages matching <code>focusschoolsoftware.com/focus/Modules.php?*Grades*</code></li>
+        <li>All external data transmission (feedback only) uses HTTPS encryption</li>
         <li>No remote code is loaded or executed</li>
+        <li>No cookies, tracking pixels, or analytics scripts are used</li>
     </ul>
 
     <h2>7. Data Retention</h2>
@@ -147,7 +148,7 @@
         <li><strong>Feedback is optional</strong>: You are never required to submit feedback. The Extension functions fully without it.</li>
         <li><strong>Control your local data</strong>: Clear localStorage or browser data at any time to remove the stored theme preference.</li>
         <li><strong>Uninstall</strong>: Remove the Extension at any time from <code>chrome://extensions</code> to stop all data processing and delete all locally stored data.</li>
-        <li><strong>Request information</strong>: Contact us (see Section 12) with any questions about your data.</li>
+        <li><strong>Request information</strong>: Contact us (see Section 13) with any questions about your data.</li>
     </ul>
 
     <h2>9. Children's Privacy</h2>
@@ -156,7 +157,22 @@
     <h2>10. Changes to This Policy</h2>
     <p>We may update this privacy policy from time to time. When we do, we will update the "Last Updated" date at the top of this page. We encourage you to review this policy periodically. Continued use of the Extension after changes are posted constitutes your acceptance of the updated policy.</p>
 
-    <h2>11. Compliance</h2>
+    <h2>11. Chrome Web Store Data Use Disclosures</h2>
+    <p>In accordance with Chrome Web Store requirements, the following table summarizes how the Extension handles each category of user data:</p>
+    <ul>
+        <li><strong>Personally identifiable information</strong>: Not collected, not transmitted, not stored.</li>
+        <li><strong>Health information</strong>: Not collected, not transmitted, not stored.</li>
+        <li><strong>Financial and payment information</strong>: Not collected, not transmitted, not stored.</li>
+        <li><strong>Authentication information</strong>: Not collected, not transmitted, not stored.</li>
+        <li><strong>Personal communications</strong>: Not collected, not transmitted, not stored.</li>
+        <li><strong>Location</strong>: Not collected, not transmitted, not stored.</li>
+        <li><strong>Web browsing activity</strong>: The page URL (domain and path only) is collected when the user voluntarily submits feedback. This is used solely for debugging and is not used for tracking. See Section 3.</li>
+        <li><strong>User activity</strong>: Not collected, not transmitted, not stored.</li>
+        <li><strong>Website content</strong>: Grade data displayed on Focus SIS pages is read and processed locally in the browser for calculation purposes. This data is never transmitted externally. See Section 1.</li>
+    </ul>
+    <p>No data is sold to third parties. No data is used for purposes unrelated to the Extension's core functionality. No data is used for creditworthiness or lending purposes.</p>
+
+    <h2>12. Compliance</h2>
     <p>This Extension and privacy policy are designed to comply with:</p>
     <ul>
         <li>The <a href="https://developer.chrome.com/docs/webstore/program-policies/" target="_blank" rel="noopener noreferrer">Chrome Web Store Developer Program Policies</a></li>
@@ -165,10 +181,10 @@
     </ul>
 
     <div class="contact">
-        <h2>12. Contact Information</h2>
+        <h2>13. Contact Information</h2>
         <p>If you have questions about this privacy policy, your data, or the Extension, please contact:</p>
         <p><strong>Developer</strong>: Sebastian Leon<br>
-        <strong>Email</strong>: <a href="mailto:sebastian.08ld@gmail.com">sebastian.08ld@gmail.com</a><br>
+        <strong>Email</strong>: <a href="mailto:focusgrades.feedback@gmail.com">focusgrades.feedback@gmail.com</a><br>
         <strong>Subject Line</strong>: Focus Grade Calculator — Privacy Policy Question</p>
     </div>
 

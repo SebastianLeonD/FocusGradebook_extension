@@ -289,7 +289,7 @@ chrome.runtime.onMessage("openFloatingCalculator")
     → generateThemedCSS() (from theme-system.js)
     → setupEvents() — binds all button handlers
     → setupDrag() — drag-and-drop on header
-    → setupGPACalculatorEvents() (from gpa-calculator.js)
+    → setupGPACalculatorEvents() (defined in content-main.js)
     → setupFeedbackSystem() (from feedback-system.js)
     → setupNewFeaturesSection() (from feedback-system.js)
     → setupClassChangeMonitoring() (from content-utilities.js)
@@ -357,6 +357,8 @@ forgivenessData = {
 | `calculateGPA(classes, semester)` | Main GPA calculation with weighted/unweighted |
 | `normalizeBCPSLetter(letter)` | Normalizes input ("EX" → exempt, etc.) |
 | `isFocusStudentGradesURL()` | Checks for `StudentRCGrades.php` in URL |
+| `setPopupSizeForInterface(interfaceType)` | Sets popup size class: mode-selection/grade-calculator/gpa-calculator/gpa-results. Called by `theme-system.js:applySizingForCurrentInterface()` |
+| `determineActiveInterface()` | Detects which screen is currently visible, used to pick the right size class |
 
 ---
 
@@ -421,14 +423,14 @@ forgivenessData = {
 |----------|-------------|
 | `applyPopupTheme(name)` | Swaps theme CSS, calls `applySizingForCurrentInterface()` |
 | `generateThemedCSS(theme)` | Returns full CSS string for a theme. Handles sizing, layout, colors |
-| `applySizingForCurrentInterface()` | Adjusts popup dimensions for current screen |
-| `setPopupSizeForInterface(interface)` | Sets size class: small/medium/large/xlarge |
+| `applySizingForCurrentInterface()` | Calls `determineActiveInterface()` + `setPopupSizeForInterface()` (both defined in `gpa-calculator.js`) to adjust popup dimensions for current screen |
 
-### Sizing Classes
-- `.size-small` — 520px (mode selection)
-- `.size-medium` — 550px (grade calculator)
-- `.size-large` — 650px (GPA calculator)
-- `.size-xlarge` — 800px (GPA step 2)
+### Sizing Classes (legacy CSS, not applied at runtime)
+`.size-small` (520px), `.size-medium` (550px), `.size-large` (650px), `.size-xlarge` (800px) are defined in the CSS but nothing in the codebase adds them — `setPopupSizeForInterface()` in `gpa-calculator.js` only removes them and sets inline width via `sizePresets`:
+- `mode-selection` — 295px
+- `grade-calculator` — 330px
+- `gpa-calculator` — 330px
+- `gpa-results` — 330px
 
 ### Persistence
 Theme saved to `localStorage` as `fgs-selected-theme`.

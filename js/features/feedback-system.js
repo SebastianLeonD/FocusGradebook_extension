@@ -6,6 +6,18 @@
  * Removed auto-initialization to prevent feedback box from opening automatically
  */
 
+// Max characters allowed in a single feedback submission
+const FGS_FEEDBACK_MAX_LENGTH = 1000;
+
+// Cooldown after a successful send before another submission is allowed (ms)
+const FGS_FEEDBACK_COOLDOWN_MS = 30000;
+
+// Timestamp (ms) of the last successful feedback send, used for rate limiting
+let fgsLastFeedbackSentAt = 0;
+
+// Guards against double-submits while a request is in flight
+let fgsFeedbackSubmitInProgress = false;
+
 /**
  * Sets up feedback system event listeners
  */
@@ -29,33 +41,40 @@ function setupFeedbackEvents(retries = 0) {
         const toggleButton = document.getElementById('fgs-feedback-toggle');
         const feedbackContent = document.getElementById('fgs-feedback-content');
         const feedbackHeader = document.querySelector('.fgs-feedback-header');
-        
+        const counter = document.getElementById('fgs-feedback-counter');
+
         if (!sendButton || !textarea) {
             if (retries < 5) setTimeout(() => setupFeedbackEvents(retries + 1), 1000);
             return;
         }
-        
+
         // Avoid duplicate event listeners
         if (sendButton.getAttribute('data-feedback-setup') === 'true') {
             return;
         }
         sendButton.setAttribute('data-feedback-setup', 'true');
-        
+
         // Always start with feedback box collapsed when popup opens
         if (feedbackContent && toggleButton) {
             feedbackContent.classList.add('collapsed');
             toggleButton.textContent = '+';
         }
-        
+
         // Send feedback event
         sendButton.addEventListener('click', handleSendFeedback);
-        
-        // Enable/disable send button based on textarea content
+
+        // Enable/disable send button based on textarea content, update live character counter
         textarea.addEventListener('input', () => {
+            const length = textarea.value.length;
             const hasContent = textarea.value.trim().length > 0;
-            sendButton.disabled = !hasContent;
+            const withinLimit = length <= FGS_FEEDBACK_MAX_LENGTH;
+            sendButton.disabled = !hasContent || !withinLimit || fgsFeedbackSubmitInProgress;
+            if (counter) {
+                counter.textContent = `${length}/${FGS_FEEDBACK_MAX_LENGTH}`;
+                counter.style.color = withinLimit ? '' : '#e74c3c';
+            }
         });
-        
+
         // Toggle feedback box collapse/expand
         if (toggleButton && feedbackContent) {
             toggleButton.addEventListener('click', (e) => {
@@ -63,15 +82,16 @@ function setupFeedbackEvents(retries = 0) {
                 toggleFeedbackBox();
             });
         }
-        
+
         // Also allow header click to toggle
         if (feedbackHeader && feedbackContent) {
             feedbackHeader.addEventListener('click', toggleFeedbackBox);
         }
-        
+
         // Initial button state
         sendButton.disabled = textarea.value.trim().length === 0;
-        
+        if (counter) counter.textContent = `${textarea.value.length}/${FGS_FEEDBACK_MAX_LENGTH}`;
+
     } catch (error) {
         // Silent error handling for production
     }
@@ -109,42 +129,84 @@ function handleSendFeedback() {
         const textarea = document.getElementById('fgs-feedback-text');
         const sendButton = document.getElementById('fgs-send-feedback');
         const statusSpan = document.getElementById('fgs-feedback-status');
-        
+        const categorySelect = document.getElementById('fgs-feedback-category');
+
         if (!textarea || !sendButton || !statusSpan) return;
-        
+
+        // Prevent double-submits while a request is already in flight
+        if (fgsFeedbackSubmitInProgress) return;
+
+        // Rate limit: block re-submission for a short cooldown after a successful send
+        const msSinceLastSend = Date.now() - fgsLastFeedbackSentAt;
+        if (fgsLastFeedbackSentAt && msSinceLastSend < FGS_FEEDBACK_COOLDOWN_MS) {
+            const secondsLeft = Math.ceil((FGS_FEEDBACK_COOLDOWN_MS - msSinceLastSend) / 1000);
+            if (typeof showToast === 'function') {
+                showToast(`Please wait ${secondsLeft}s before sending more feedback`, 'warning');
+            }
+            return;
+        }
+
         const feedbackText = textarea.value.trim();
         if (!feedbackText) {
             showFeedbackStatus('error', 'Please enter your feedback first');
             return;
         }
-        
+        if (feedbackText.length > FGS_FEEDBACK_MAX_LENGTH) {
+            showFeedbackStatus('error', `Feedback is too long (max ${FGS_FEEDBACK_MAX_LENGTH} characters)`);
+            return;
+        }
+
+        const category = categorySelect ? categorySelect.value : 'Other';
+
         // Show sending status
+        fgsFeedbackSubmitInProgress = true;
         sendButton.disabled = true;
+        sendButton.setAttribute('aria-busy', 'true');
         sendButton.textContent = '📤 Sending...';
         showFeedbackStatus('sending', 'Sending...');
-        
+
         // Send via Web3Forms - completely automated
-        sendViaWeb3Forms(feedbackText)
+        sendViaWeb3Forms(feedbackText, category)
             .then(() => {
                 // Success
+                fgsLastFeedbackSentAt = Date.now();
                 showFeedbackStatus('success', '✅ Sent!');
+                if (typeof showToast === 'function') {
+                    showToast('Feedback sent — thank you!', 'info', 3000);
+                }
                 textarea.value = '';
+                const counter = document.getElementById('fgs-feedback-counter');
+                if (counter) counter.textContent = `0/${FGS_FEEDBACK_MAX_LENGTH}`;
                 sendButton.textContent = '📧 Send';
+                sendButton.removeAttribute('aria-busy');
                 sendButton.disabled = true;
-                
+
                 // Hide success message after 3 seconds
                 setTimeout(() => {
                     statusSpan.style.opacity = '0';
                 }, 3000);
             })
             .catch((error) => {
-                // Error
+                // Error — give the user a clear, actionable retry message
+                const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+                const message = offline
+                    ? 'You appear to be offline. Check your connection and try again.'
+                    : 'Could not send feedback. Please try again.';
                 showFeedbackStatus('error', '❌ Failed');
+                if (typeof showToast === 'function') {
+                    showToast(message, 'error', 5000);
+                }
                 sendButton.textContent = '📧 Send';
-                sendButton.disabled = false;
+                sendButton.removeAttribute('aria-busy');
+                // Re-enable immediately so the user can retry (no cooldown on failure)
+                sendButton.disabled = textarea.value.trim().length === 0;
+            })
+            .finally(() => {
+                fgsFeedbackSubmitInProgress = false;
             });
-        
+
     } catch (error) {
+        fgsFeedbackSubmitInProgress = false;
         showFeedbackStatus('error', '❌ Error occurred');
     }
 }
@@ -173,27 +235,34 @@ function showFeedbackStatus(type, message) {
 /**
  * Send via Web3Forms - completely automated, user just types and clicks send!
  */
-function sendViaWeb3Forms(feedbackText) {
+function sendViaWeb3Forms(feedbackText, category) {
     return new Promise((resolve, reject) => {
         try {
             // Create form data with your Web3Forms access key
             const formData = new FormData();
             formData.append('access_key', '4a01005a-93cd-4a05-83fd-7a972d602c15');
-            
+
             // Required fields
             formData.append('name', 'Focus Grade Calculator User');
             formData.append('email', 'noreply@focusextension.com'); // Dummy email since user doesn't provide one
             formData.append('message', feedbackText);
-            
-            // Additional useful info
+
+            // Additional useful info so the developer can act on the feedback
+            formData.append('category', category || 'Other');
             formData.append('timestamp', new Date().toISOString());
-            formData.append('extension_version', chrome.runtime.getManifest().version);
+            // chrome.runtime.getManifest() is available to content scripts (their own
+            // isolated-world chrome.* namespace), not the page's — safe to call directly here.
+            try {
+                formData.append('extension_version', chrome.runtime.getManifest().version);
+            } catch (versionError) {
+                formData.append('extension_version', 'unknown');
+            }
             formData.append('page_url', window.location.origin + window.location.pathname);
             formData.append('user_agent', navigator.userAgent);
-            
+
             // Web3Forms configuration
-            formData.append('subject', 'Focus Grade Calculator - New Feedback');
-            
+            formData.append('subject', `Focus Grade Calculator - New Feedback [${category || 'Other'}]`);
+
             // Send to Web3Forms API
             fetch('https://api.web3forms.com/submit', {
                 method: 'POST',
@@ -207,9 +276,11 @@ function sendViaWeb3Forms(feedbackText) {
                 }
             })
             .catch(error => {
+                // Covers both HTTP-status failures above and network-level fetch
+                // rejections (offline, DNS failure, CORS, etc.)
                 reject(error);
             });
-            
+
         } catch (error) {
             reject(error);
         }
