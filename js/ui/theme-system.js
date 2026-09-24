@@ -1016,31 +1016,6 @@ function generateThemedCSS(theme) {
             font-size: 11px;
         }
         
-        .fgs-gpa-core-tag {
-            display: inline-block;
-            background: rgba(76, 175, 80, 0.9);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 9px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .fgs-gpa-core-toggle {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.8);
-            cursor: pointer;
-        }
-        .fgs-gpa-core-checkbox {
-            margin: 0;
-            cursor: pointer;
-        }
-        .fgs-gpa-core-tag.manual {
-            outline: 1px dashed rgba(255, 255, 255, 0.5);
-        }
         
         .fgs-gpa-eoc-tag {
             display: inline-block;
@@ -1442,96 +1417,6 @@ function generateThemedCSS(theme) {
             margin-bottom: 12px;
         }
         
-        .fgs-gpa-core-help-link {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: ${isLightTheme ? '#2563eb' : '#60a5fa'};
-            cursor: pointer;
-            margin: 8px 0;
-            text-align: center;
-            text-decoration: underline;
-        }
-
-        .fgs-gpa-core-help-link:hover {
-            opacity: 0.8;
-            color: ${isLightTheme ? '#1d4ed8' : '#93bbfd'};
-        }
-
-        .fgs-core-gpa-help-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 2147483646;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .fgs-core-gpa-help-popup {
-            position: relative;
-            background: ${isLightTheme ? '#fff' : '#1e1e2e'};
-            color: ${isLightTheme ? '#1a1a1a' : '#f0f0f0'};
-            border-radius: 10px;
-            padding: 20px 24px;
-            max-width: 400px;
-            width: 90%;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-
-        .fgs-core-gpa-help-close {
-            position: absolute;
-            top: 10px;
-            right: 14px;
-            font-size: 20px;
-            cursor: pointer;
-            color: ${isLightTheme ? '#999' : '#666'};
-            line-height: 1;
-        }
-
-        .fgs-core-gpa-help-close:hover {
-            color: ${isLightTheme ? '#333' : '#ccc'};
-        }
-
-        .fgs-core-gpa-help-popup h4 {
-            margin: 0 0 12px 0;
-            font-size: 15px;
-            font-weight: 600;
-        }
-
-        .fgs-core-gpa-help-steps {
-            margin: 0 0 14px 0;
-            padding-left: 20px;
-        }
-
-        .fgs-core-gpa-help-steps li {
-            margin: 6px 0;
-            font-size: 12px;
-            line-height: 1.5;
-        }
-
-        .fgs-core-gpa-help-formula {
-            text-align: center;
-            font-size: 12px;
-            padding: 8px;
-            background: ${isLightTheme ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.06)'};
-            border-radius: 6px;
-            margin-bottom: 10px;
-            font-family: monospace;
-        }
-
-        .fgs-core-gpa-help-note {
-            font-size: 11px;
-            color: ${isLightTheme ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.45)'};
-            font-style: italic;
-            margin: 0;
-            line-height: 1.4;
-        }
-
         .fgs-gpa-info {
             background: ${theme.isTransparent ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.05)'};
             border-radius: 4px;
@@ -1782,28 +1667,6 @@ function generateThemedCSS(theme) {
             font-weight: 500;
             white-space: nowrap;
             flex-shrink: 0;
-        }
-
-        /* Core GPA rough estimate disclaimer */
-        .fgs-gpa-core-estimate-note {
-            font-size: 10px;
-            color: ${isLightTheme ? '#666' : '#aaa'};
-            font-style: italic;
-            text-align: center;
-            margin-top: 4px;
-            padding: 0 8px;
-        }
-
-        /* Core GPA note */
-        .fgs-forgiveness-core-note {
-            background: rgba(52, 144, 220, 0.1);
-            border: 1px solid rgba(52, 144, 220, 0.25);
-            border-radius: 6px;
-            padding: 8px 10px;
-            margin-top: 8px;
-            font-size: 10px;
-            color: ${isLightTheme ? '#1a5276' : '#85c1e9'};
-            font-weight: 500;
         }
 
         /* Policy note */

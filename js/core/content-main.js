@@ -870,9 +870,6 @@
                         };
 
                         safeAddGPAListener("fgs-gpa-create-manual", "click", showManualStep);
-                        safeAddGPAListener("fgs-gpa-core-help-link", "click", () => {
-                                if (typeof showCoreGPAHelp === 'function') showCoreGPAHelp();
-                        });
                         safeAddGPAListener("fgs-gpa-manual-back", "click", hideManualStep);
                         safeAddGPAListener("fgs-manual-cancel-btn", "click", hideManualStep);
 
@@ -1036,7 +1033,6 @@
                                         type: classType,
                                         manualType: classType,
                                         typeEditorOpen: false,
-                                        isCore: typeof isCoreSubject === 'function' ? isCoreSubject(className) : false,
                                         credits: defaultCredits,
                                         userCredits: null,
                                         isEOC: typeof isEOCCourse === 'function' ? isEOCCourse(className) : false,

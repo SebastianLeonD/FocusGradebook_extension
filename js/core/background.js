@@ -1,8 +1,9 @@
 // Background script - handles extension icon clicks and dynamic popup switching
 
-// Function to check if a URL is a valid Focus URL
+// Only a class grades page (StudentGBGrades) or the Grades tab (StudentRCGrades) is valid.
+// Other Focus pages (e.g. the Portal home, misc/Portal.php) get the wrong-page popup.
 function isFocusUrl(url) {
-    return url && url.includes('focusschoolsoftware.com');
+    return !!url && /focusschoolsoftware\.com\/focus\/Modules\.php\?.*modname=Grades\/Student(GB|RC)Grades\.php/.test(url);
 }
 
 // Function to update the extension icon behavior based on the current URL

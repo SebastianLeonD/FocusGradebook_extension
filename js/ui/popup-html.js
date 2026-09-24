@@ -124,7 +124,6 @@ function getPopupHTML() {
                         </div>
 
                         <p class="fgs-gpa-subheading" id="fgs-gpa-subheading-text">Focus grades are auto-filled when available. Confirm or adjust Q3, Q4, and Semester Exam letters for each course.</p>
-                        <a class="fgs-gpa-core-help-link" id="fgs-gpa-core-help-link">How to get the most accurate Core GPA?</a>
 
                         <!-- Full Year Warning Banner - Hidden by default -->
                         <div class="fgs-gpa-full-year-warning" id="fgs-gpa-full-year-warning" style="display: none;">

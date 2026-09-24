@@ -18,7 +18,7 @@ Every session, follow this order:
 - **UI**: All injected via JS template strings — no separate HTML/CSS for the popup
 - **APIs**: Chrome Extensions API (tabs, runtime, action), Web3Forms (anonymous feedback)
 - **Target site**: Focus Student Information System (`focusschoolsoftware.com`)
-- **Version**: 1.7.3 (published on Chrome Web Store)
+- **Version**: 1.7.5 (published on Chrome Web Store)
 - **Indentation**: Tabs (not spaces)
 
 ## Project Structure
@@ -33,7 +33,7 @@ focus-grade-calculator/
 ├── privacy-policy.html                    # CWS privacy policy
 ├── 16.png / 32.png / 48.png / 128.png     # Extension icons
 ├── popup/
-│   ├── wrong_page.html                    # Shown when clicked on non-Focus pages
+│   ├── wrong_page.html                    # Shown when clicked off a class grades page / Grades tab
 │   ├── focus_grades_instructions.jpg      # Screenshot used by wrong_page.html
 │   ├── focus_portal_instructions.jpg      # Screenshot used by wrong_page.html
 │   └── *.mp4                              # Tutorial videos (web accessible)

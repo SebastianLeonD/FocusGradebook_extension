@@ -111,6 +111,23 @@
 - **Files Changed**: `js/calculations/content-calculations.js`
 - **Lesson**: Fallback/default values in parallel code paths (weighted vs unweighted) must agree. When a display is derived from per-category data, its empty-state default must match the per-category empty state.
 
+
+### #012 — Extension did nothing on the Focus Portal home page
+- **Date**: 2026-09-24
+- **Symptom**: On `Modules.php?modname=misc/Portal.php` clicking the icon did nothing instead of showing the wrong-page popup. Students assumed the home page was the right page.
+- **Root Cause**: `isFocusUrl()` in `background.js` accepted any `focusschoolsoftware.com` URL, so the popup was cleared and a message was sent to a content script that never loads there (manifest only matches `*Grades*`).
+- **Fix**: `isFocusUrl()` now requires `modname=Grades/StudentGBGrades.php` or `modname=Grades/StudentRCGrades.php`.
+- **Files Changed**: `js/core/background.js`
+- **Lesson**: The background URL check must be at least as strict as the content-script `matches`, or the click silently goes nowhere.
+
+### #013 — Core GPA removed
+- **Date**: 2026-09-24
+- **Symptom**: Core GPA numbers were misleading.
+- **Root Cause**: Focus does not mark which classes are core; detection was a course-name guess (`isCoreSubject`) and the baseline depended on the course history being fully visible.
+- **Fix**: Removed all Core GPA logic and UI (baseline scrape, projections, forgiveness core row, Core badge/checkbox, help popup, CSS, what's-new card).
+- **Files Changed**: `gpa-calculator.js`, `content-main.js`, `popup-html.js`, `theme-system.js`, `feedback-system.js`
+- **Lesson**: Don't ship a number the extension can't compute reliably, even with a disclaimer.
+
 ---
 
 ## Patterns to Watch For

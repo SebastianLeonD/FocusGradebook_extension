@@ -19,7 +19,6 @@ function createEmptyProjectedGPAs() {
     return {
         unweighted: null,
         weighted: null,
-        core: null,
         cumulativeProjected: null,
         cumulativeDelta: null,
         weightedProjected: null,
@@ -51,7 +50,7 @@ let gpaCalculatorData = {
 let forgivenessData = {
 	allClasses: [],
 	eligibleClasses: [],
-	selectedActions: [], // { classId, oldGrade, oldCredits, oldType, newGrade, newCredits, newType, isCore }
+	selectedActions: [], // { classId, oldGrade, oldCredits, oldType, newGrade, newCredits, newType }
 	results: null
 };
 
@@ -64,7 +63,7 @@ const FORGIVENESS_NEW_GRADE_OPTIONS = ['A', 'B+', 'B', 'C+', 'C'];
 // BCPS allows a maximum of 3 credit forgiveness uses in high school
 const MAX_FORGIVENESS_USES = 3;
 
-// Base quality points for weighted/core GPA (plus grades retain their value)
+// Base quality points for weighted GPA (plus grades retain their value)
 const WEIGHTED_BASE_POINTS = {
     'A': 4.0, 'B+': 3.5, 'B': 3.0, 'C+': 2.5, 'C': 2.0,
     'D+': 1.5, 'D': 1.0, 'F': 0.0
@@ -426,14 +425,7 @@ function extractBaselineGPAStats(forceRetry = true) {
             (cumulativeGPA !== null && totalCreditsAttempted !== null ? cumulativeGPA * totalCreditsAttempted : null);
         const asOf = asOfText || null;
         
-        const coreField = Array.from(document.querySelectorAll('.student-grades-field')).find((field) => {
-            const title = field.querySelector('.title');
-            return title && title.textContent.trim().toLowerCase().includes('core gpa');
-        });
-        const coreValueText = coreField ? coreField.querySelector('.value')?.textContent : null;
-        const coreGPA = coreValueText ? parseNumberFromText(coreValueText) : null;
-
-        if (cumulativeGPA === null && weightedGPA === null && totalCreditsAttempted === null && qualityPoints === null && coreGPA === null) {
+        if (cumulativeGPA === null && weightedGPA === null && totalCreditsAttempted === null && qualityPoints === null) {
             gpaCalculatorData.baselineStats = null;
             return;
         }
@@ -444,7 +436,6 @@ function extractBaselineGPAStats(forceRetry = true) {
             totalCreditsEarned,
             totalCreditsAttempted,
             qualityPoints,
-            coreGPA,
             asOf
         };
         
@@ -456,128 +447,9 @@ function extractBaselineGPAStats(forceRetry = true) {
     }
 }
 
-let coreCreditsExtractAttempts = 0;
-const MAX_CORE_CREDITS_ATTEMPTS = 8;
-
-function extractBaselineCoreCredits() {
-    try {
-        if (!gpaCalculatorData.baselineStats) return;
-        if (gpaCalculatorData.baselineStats.baseCoreCredits !== undefined) return;
-
-        const currentYear = getCurrentAcademicYear();
-        const rows = document.querySelectorAll('.student-grade');
-
-        if (rows.length === 0) {
-            if (coreCreditsExtractAttempts < MAX_CORE_CREDITS_ATTEMPTS) {
-                coreCreditsExtractAttempts += 1;
-                setTimeout(() => extractBaselineCoreCredits(), 300);
-            }
-            return;
-        }
-
-        let coreCredits = 0;
-        let coreQualityPoints = 0;
-
-        rows.forEach((row) => {
-            try {
-                const yearCell = row.querySelector('[data-field="syear_display"]');
-                const courseCell = row.querySelector('[data-field="course_name"]');
-                if (!yearCell || !courseCell) return;
-
-                const year = yearCell.textContent.trim();
-                const courseName = courseCell.textContent.trim();
-                if (!courseName) return;
-
-                // Skip current year — those are what the user is projecting
-                if (year === currentYear) return;
-
-                if (!isCoreSubject(courseName)) return;
-
-                // Check Credits column — if 0, not a high school credit class
-                const creditsCell = row.querySelector('[data-field="credit_hours"]') || row.querySelector('[data-field="credits"]');
-                const rowCredits = creditsCell ? parseFloat(creditsCell.textContent.trim()) : -1;
-                if (rowCredits === 0) return;
-
-                const courseType = detectCourseType(courseName);
-
-                // Read semester grade cells
-                const s1Cell = row.querySelector('[data-field="mp_s1"] a') || row.querySelector('[data-field="mp_s1"]')
-                    || row.querySelector('[data-field="mp_sem1"] a') || row.querySelector('[data-field="mp_sem1"]');
-                const s2Cell = row.querySelector('[data-field="mp_s2"] a') || row.querySelector('[data-field="mp_s2"]')
-                    || row.querySelector('[data-field="mp_sem2"] a') || row.querySelector('[data-field="mp_sem2"]');
-
-                const s1Raw = s1Cell ? s1Cell.textContent.trim() : '';
-                const s2Raw = s2Cell ? s2Cell.textContent.trim() : '';
-
-                let hasS1 = s1Raw && s1Raw !== 'NG' && s1Raw !== '--';
-                let hasS2 = s2Raw && s2Raw !== 'NG' && s2Raw !== '--';
-
-                // Determine per-semester credits from Credits column
-                let perSemesterCredits;
-                if (rowCredits > 0) {
-                    if (hasS1 && hasS2) {
-                        // Year-long class: split total credits between semesters
-                        perSemesterCredits = rowCredits / 2;
-                    } else {
-                        // Single semester visible: if ≤ 0.5 total, likely a semester-only class
-                        perSemesterCredits = rowCredits <= 0.5 ? rowCredits : rowCredits / 2;
-                    }
-                } else {
-                    // Credits column unavailable — default
-                    perSemesterCredits = 0.5;
-                }
-
-                // S1: count credit and compute quality points
-                if (hasS1) {
-                    const letter = extractLetterFromGradeCell(s1Cell);
-                    if (letter && letter !== 'EX') {
-                        coreCredits += perSemesterCredits;
-                        coreQualityPoints += getCorePoints(letter, courseType) * perSemesterCredits;
-                    }
-                }
-
-                // S2: count credit and compute quality points
-                if (hasS2) {
-                    const letter = extractLetterFromGradeCell(s2Cell);
-                    if (letter && letter !== 'EX') {
-                        coreCredits += perSemesterCredits;
-                        coreQualityPoints += getCorePoints(letter, courseType) * perSemesterCredits;
-                    }
-                }
-
-                // Fallback: if no S1/S2 grades but class has credits and a FY grade, use FY
-                if (!hasS1 && !hasS2 && rowCredits > 0) {
-                    const fyCell = row.querySelector('[data-field="mp_fy"] a') || row.querySelector('[data-field="mp_fy"]')
-                        || row.querySelector('[data-field="mp_year"] a') || row.querySelector('[data-field="mp_year"]');
-                    const fyRaw = fyCell ? fyCell.textContent.trim() : '';
-                    if (fyRaw && fyRaw !== 'NG' && fyRaw !== '--' && fyRaw !== 'P' && fyRaw !== 'F*') {
-                        const letter = extractLetterFromGradeCell(fyCell);
-                        if (letter && letter !== 'EX') {
-                            coreCredits += rowCredits;
-                            coreQualityPoints += getCorePoints(letter, courseType) * rowCredits;
-                        }
-                    }
-                }
-            } catch (_) { /* skip row */ }
-        });
-
-        gpaCalculatorData.baselineStats.baseCoreCredits = coreCredits > 0 ? coreCredits : null;
-        gpaCalculatorData.baselineStats.baseCoreQualityPoints = coreCredits > 0 ? coreQualityPoints : null;
-        // Compute baseline Core GPA from actual data (more accurate than Focus display)
-        if (coreCredits > 0) {
-            gpaCalculatorData.baselineStats.computedCoreGPA = roundGPA(coreQualityPoints / coreCredits);
-        }
-        coreCreditsExtractAttempts = 0;
-
-    } catch (error) {
-        /* silent */
-    }
-}
-
 // Kick off an initial baseline scrape shortly after the content script loads
 if (typeof document !== 'undefined' && isFocusStudentGradesURL()) {
     setTimeout(() => extractBaselineGPAStats(true), 150);
-    setTimeout(() => extractBaselineCoreCredits(), 500);
 }
 
 // ===========================================
@@ -637,53 +509,6 @@ function detectCourseType(courseName) {
     }
     
     return 'Regular';
-}
-
-function isCoreSubject(courseName) {
-    const name = courseName.toUpperCase();
-
-    // English / Language Arts (ENG catches "ENG HON 1", "AICE ENG GEN PAPER")
-    if (name.includes('ENGLISH') || name.includes('ENG ') || name.includes('LANGUAGE ARTS') ||
-        name.includes('ELA ') || name.includes('READING') || name.includes('READ ') ||
-        name.includes('LITERATURE') || name.includes('LANG ARTS')) {
-        return true;
-    }
-
-    // Math
-    if (name.includes('MATH') || name.includes('ALGEBRA') || name.includes('GEOMETRY') ||
-        name.includes('CALCULUS') || name.includes('STATISTICS') || name.includes('TRIGONOMETRY') ||
-        name.includes('PRE-CALC') || name.includes('PRECALC')) {
-        return true;
-    }
-
-    // Science — guard against "COMPUTER SCIENCE" / "COMP SCI" / "CPTR SCI"
-    if ((name.includes('SCIENCE') && !name.includes('COMPUTER') && !name.includes('COMP ') && !name.includes('CPTR')) ||
-        name.includes('BIOLOGY') || name.includes('CHEMISTRY') || name.includes('PHYSICS') ||
-        name.includes('ENVIRONMENTAL') || name.includes('ENV SCI') || name.includes('ANATOMY') ||
-        name.includes('EARTH SCI') || name.includes('MARINE SCI') || name.includes('MARINE BIO')) {
-        return true;
-    }
-
-    // Social Studies (ECON catches "AMER ECON EXP", GOV catches "GOV" / "GOVT" / "GOVERNMENT")
-    // Avoid bare "WORLD" — false-matches "WORLD OF TECHNOLOGY" etc.
-    if (name.includes('HISTORY') || name.includes('GOV') || name.includes('ECON') ||
-        name.includes('GEOGRAPHY') || name.includes('CIVICS') || name.includes('PSYCH') ||
-        name.includes('SOCIAL STUDIES') || name.includes('WORLD CULT') || name.includes('WORLD AFF') ||
-        name.includes('AMERICAN') || name.includes('AMER ') || name.includes('SOCIOLOGY')) {
-        return true;
-    }
-
-    // World Languages
-    if (name.includes('SPANISH') || name.includes('FRENCH') || name.includes('GERMAN') ||
-        name.includes('CHINESE') || name.includes('MANDARIN') || name.includes('JAPANESE') ||
-        name.includes('LATIN') || name.includes('ITALIAN') || name.includes('PORTUGUESE') ||
-        name.includes('ARABIC') || name.includes('HEBREW') || name.includes('RUSSIAN') ||
-        name.includes('KOREAN') || name.includes('HAITIAN') || name.includes('SIGN LANG') ||
-        (name.includes('LANGUAGE') && !name.includes('LANGUAGE ARTS'))) {
-        return true;
-    }
-
-    return false;
 }
 
 function isEOCCourse(courseName) {
@@ -816,7 +641,6 @@ function extractClassData() {
                 }
 
                 const courseType = detectCourseType(courseName);
-                const isCore = isCoreSubject(courseName);
                 const isEOC = isEOCCourse(courseName);
 
                 // Display the most recent available grade
@@ -858,7 +682,6 @@ function extractClassData() {
                     type: courseType,
                     manualType: null,
                     typeEditorOpen: false,
-                    isCore,
                     credits: defaultCredits,
                     userCredits: null, // User-overridden credits (null means use default)
                     isEOC,
@@ -973,7 +796,6 @@ function extractAllClassData() {
 				}
 
 				const courseType = detectCourseType(courseName);
-				const isCore = isCoreSubject(courseName);
 				const quarters = { q1: q1Letter, q2: q2Letter, q3: q3Letter, q4: q4Letter, s1Exam: s1ExamLetter, s2Exam: s2ExamLetter };
 
 				// Read Credits column for actual credit value
@@ -1035,7 +857,6 @@ function extractAllClassData() {
 						name: courseName,
 						year: year,
 						type: courseType,
-						isCore: isCore,
 						credits: perSemCredits,
 						semesterType: sem.semesterType,
 						semesterGrade: sem.semesterGrade,
@@ -1122,10 +943,6 @@ function showGPAStep(stepNumber) {
             setTimeout(() => adjustPopupSize(), 100);
         } else if (stepNumber === 2) {
             if (step2) step2.style.display = 'flex';
-            // Ensure baseline core credits are extracted before calculating
-            if (gpaCalculatorData.baselineStats && gpaCalculatorData.baselineStats.coreGPA !== null && gpaCalculatorData.baselineStats.baseCoreCredits === undefined) {
-                extractBaselineCoreCredits();
-            }
             calculateGPAs();
             renderResults();
             setPopupSizeForInterface('gpa-results');
@@ -1210,8 +1027,6 @@ function renderClassList() {
             classItem.className = 'fgs-gpa-class-item';
 
             const typeLabel = getTypeLabel(classData.type);
-            const coreManualClass = classData.manualCore !== null && classData.manualCore !== undefined ? ' manual' : '';
-            const coreBadge = classData.isCore ? '<span class="fgs-gpa-core-tag' + coreManualClass + '" data-class-id="' + classData.id + '" title="Click to toggle core status">Core</span>' : '';
             const eocBadge = classData.isEOC ? '<span class="fgs-gpa-eoc-tag" title="State End-of-Course weighting">EOC</span>' : '';
 
             // Build grade selectors based on selected semester
@@ -1265,13 +1080,11 @@ function renderClassList() {
                         '<div class="fgs-gpa-class-name" title="' + escapeHTML(classData.name) + '">' + escapeHTML(classData.name) + '</div>' +
                         '<div class="fgs-gpa-class-badges">' +
                             '<span class="fgs-gpa-class-type ' + classData.type.toLowerCase() + (classData.manualType ? ' manual' : '') + '">' + typeLabel + '</span>' +
-                            coreBadge +
                             eocBadge +
                             '<button class="fgs-gpa-edit-type" data-class-id="' + classData.id + '" title="Set course type">＋</button>' +
                         '</div>' +
                         '<div class="fgs-gpa-type-editor" data-class-id="' + classData.id + '" style="display: ' + (classData.typeEditorOpen ? 'flex' : 'none') + ';">' +
                             '<select class="fgs-gpa-type-select" data-class-id="' + classData.id + '">' + typeOptions + '</select>' +
-                            '<label class="fgs-gpa-core-toggle"><input type="checkbox" class="fgs-gpa-core-checkbox" data-class-id="' + classData.id + '"' + (classData.isCore ? ' checked' : '') + '> Core</label>' +
                         '</div>' +
                     '</div>' +
                     '<button class="fgs-gpa-class-remove" data-class-id="' + classData.id + '" title="Remove class">×</button>' +
@@ -1358,34 +1171,6 @@ function renderClassList() {
                 });
             }
             
-            // Core badge toggle (click to remove)
-            const coreBadgeEl = classItem.querySelector('.fgs-gpa-core-tag');
-            if (coreBadgeEl) {
-                coreBadgeEl.addEventListener('click', () => {
-                    classData.isCore = false;
-                    classData.manualCore = false;
-                    renderClassList();
-                    if (gpaCalculatorData.currentStep === 2) {
-                        calculateGPAs();
-                        renderResults();
-                    }
-                });
-            }
-
-            // Core checkbox in type editor (toggle on/off)
-            const coreCheckbox = classItem.querySelector('.fgs-gpa-core-checkbox');
-            if (coreCheckbox) {
-                coreCheckbox.addEventListener('change', (e) => {
-                    classData.isCore = e.target.checked;
-                    classData.manualCore = e.target.checked;
-                    renderClassList();
-                    if (gpaCalculatorData.currentStep === 2) {
-                        calculateGPAs();
-                        renderResults();
-                    }
-                });
-            }
-
             const removeButton = classItem.querySelector('.fgs-gpa-class-remove');
             if (removeButton) {
                 removeButton.addEventListener('click', () => removeClass(classData.id));
@@ -1577,8 +1362,6 @@ function calculateGPAs() {
         let totalCredits = 0;
         let totalUnweightedPoints = 0;
         let totalWeightedPoints = 0;
-        let coreCredits = 0;
-        let totalCorePoints = 0;
 
         gpaCalculatorData.selectedClasses.forEach((classData) => {
             if (classData.isEOC) {
@@ -1611,12 +1394,6 @@ function calculateGPAs() {
             totalUnweightedPoints += basePoints * credits;
             totalWeightedPoints += weightedPoints * credits;
             
-            if (classData.isCore) {
-                coreCredits += credits;
-                const corePoints = getCorePoints(analysis.semesterLetter, classData.type);
-                totalCorePoints += corePoints * credits;
-            }
-            
             classResults.push({
                 id: classData.id,
                 name: classData.name,
@@ -1629,7 +1406,6 @@ function calculateGPAs() {
                     exam: analysis.exam
                 },
                 type: classData.type,
-                isCore: classData.isCore,
                 credits: credits,
                 hasS1Grades: classData.hasS1Grades,
                 hasS2Grades: classData.hasS2Grades
@@ -1683,41 +1459,9 @@ function calculateGPAs() {
             }
         }
 
-        // Core GPA cumulative projection — use computed QP when available (more accurate)
-        let coreProjected = null;
-        let coreDelta = null;
-        if (baseline && coreCredits > 0) {
-            const baseCoreCredits = baseline.baseCoreCredits ?? null;
-            const baseCoreQP = baseline.baseCoreQualityPoints ?? null;
-            const displayCoreGPA = baseline.coreGPA ?? baseline.computedCoreGPA ?? null;
-            if (baseCoreCredits !== null && baseCoreQP !== null) {
-                // Use actual computed quality points (no rounding loss)
-                const combinedCoreCredits = baseCoreCredits + coreCredits;
-                if (combinedCoreCredits > 0) {
-                    const projectedCoreValue = (baseCoreQP + totalCorePoints) / combinedCoreCredits;
-                    coreProjected = roundGPA(projectedCoreValue);
-                    if (displayCoreGPA !== null) {
-                        coreDelta = projectedCoreValue - displayCoreGPA;
-                    }
-                }
-            } else if (baseCoreCredits !== null && displayCoreGPA !== null) {
-                // Fallback: reconstruct QP from GPA × credits (less accurate)
-                const reconstructedQP = displayCoreGPA * baseCoreCredits;
-                const combinedCoreCredits = baseCoreCredits + coreCredits;
-                if (combinedCoreCredits > 0) {
-                    const projectedCoreValue = (reconstructedQP + totalCorePoints) / combinedCoreCredits;
-                    coreProjected = roundGPA(projectedCoreValue);
-                    coreDelta = projectedCoreValue - displayCoreGPA;
-                }
-            }
-        }
-
         gpaCalculatorData.projectedGPAs = {
             unweighted: totalCredits > 0 ? roundGPA(totalUnweightedPoints / totalCredits) : null,
             weighted: totalCredits > 0 ? roundGPA(totalWeightedPoints / totalCredits) : null,
-            core: coreCredits > 0 ? roundGPA(totalCorePoints / coreCredits) : null,
-            coreProjected,
-            coreDelta,
             cumulativeProjected,
             cumulativeDelta,
             weightedProjected,
@@ -1777,36 +1521,6 @@ function getWeightedPoints(letter, courseType) {
         case 'PreIB':
         case 'Gifted':
             return basePoints + 1.0;
-        default:
-            return basePoints;
-    }
-}
-
-/**
- * Gets core quality points for a letter grade and course type
- * Core GPA uses SMALLER bonuses than weighted: +0.5 Honors, +1.0 AP/IB
- */
-function getCorePoints(letter, courseType) {
-    const basePoints = WEIGHTED_BASE_POINTS[letter] || 0;
-
-    if (!BCPS_WEIGHT_ELIGIBLE_GRADES.has(letter)) {
-        return basePoints;
-    }
-
-    switch (courseType) {
-        case 'AP':
-        case 'AICE':
-        case 'IB':
-        case 'DualEnrollment':
-            return basePoints + 1.0;
-        case 'Honors':
-        case 'Hon':
-        case 'hon':
-        case 'PreAP':
-        case 'PreAICE':
-        case 'PreIB':
-        case 'Gifted':
-            return basePoints + 0.5;
         default:
             return basePoints;
     }
@@ -2021,36 +1735,6 @@ function calculateForgiveness() {
 				? projectedWeighted - baseline.weightedGPA : null;
 		}
 
-		const hasCoreClasses = actions.some((a) => a.isCore);
-
-		// --- Core GPA: remove old core QP, add new core QP ---
-		let projectedCore = null;
-		let coreDelta = null;
-		const coreActions = actions.filter((a) => a.isCore);
-
-		if (coreActions.length > 0) {
-			const baseCoreCredits = baseline.baseCoreCredits ?? null;
-			const baseCoreQP = baseline.baseCoreQualityPoints ?? null;
-			const displayCoreGPA = baseline.coreGPA ?? baseline.computedCoreGPA ?? null;
-
-			if (baseCoreCredits !== null && displayCoreGPA !== null) {
-				const startQP = baseCoreQP !== null ? baseCoreQP : displayCoreGPA * baseCoreCredits;
-				let newCoreQP = startQP;
-				let newCoreCredits = baseCoreCredits;
-
-				coreActions.forEach((action) => {
-					newCoreQP -= getCorePoints(action.oldGrade, action.oldType) * action.oldCredits;
-					newCoreQP += getCorePoints(action.newGrade, action.newType) * action.newCredits;
-					newCoreCredits = newCoreCredits - action.oldCredits + action.newCredits;
-				});
-
-				if (newCoreCredits > 0) {
-					projectedCore = roundGPA(newCoreQP / newCoreCredits);
-					coreDelta = projectedCore - displayCoreGPA;
-				}
-			}
-		}
-
 		forgivenessData.results = {
 			unweighted: {
 				baseline: baseline.cumulativeGPA,
@@ -2066,12 +1750,6 @@ function calculateForgiveness() {
 				baseCredits: baseCredits,
 				newCredits: baseCredits + actions.reduce((sum, a) => sum + a.newCredits, 0)
 			},
-			core: hasCoreClasses ? {
-				baseline: baseline.coreGPA ?? baseline.computedCoreGPA ?? null,
-				projected: projectedCore,
-				delta: coreDelta
-			} : null,
-			hasCoreClasses: hasCoreClasses,
 			actionCount: actions.length
 		};
 
@@ -2163,13 +1841,6 @@ function renderForgivenessPanel() {
 			metaDiv.appendChild(yearSpan);
 			metaDiv.appendChild(semSpan);
 			metaDiv.appendChild(typeSpan);
-
-			if (classEntry.isCore) {
-				const coreBadge = document.createElement('span');
-				coreBadge.className = 'fgs-gpa-core-tag';
-				coreBadge.textContent = 'Core';
-				metaDiv.appendChild(coreBadge);
-			}
 
 			infoDiv.appendChild(nameDiv);
 			infoDiv.appendChild(metaDiv);
@@ -2348,8 +2019,7 @@ function toggleForgivenessSelection(classEntry) {
 			oldType: classEntry.type,
 			newGrade: 'C',
 			newCredits: classEntry.credits,
-			newType: classEntry.type,
-			isCore: classEntry.isCore
+			newType: classEntry.type
 		});
 	}
 	calculateForgiveness();
@@ -2448,29 +2118,6 @@ function renderForgivenessResults() {
 			container.appendChild(breakdownDiv);
 		}
 
-		// Core GPA row
-		if (results.core && (results.core.baseline !== null || results.core.projected !== null)) {
-			const ruleLabel = document.createElement('div');
-			ruleLabel.className = 'fgs-forgiveness-rule-label';
-			ruleLabel.textContent = 'Core GPA \u2014 old grade removed, new added';
-			summaryRowsDiv.appendChild(ruleLabel);
-
-			const rowDiv = document.createElement('div');
-			rowDiv.innerHTML = buildGPASummaryRow('Core GPA', results.core.baseline, results.core.projected, results.core.delta, '');
-			while (rowDiv.firstChild) {
-				summaryRowsDiv.appendChild(rowDiv.firstChild);
-			}
-			const coreDisclaimer = document.createElement('div');
-			coreDisclaimer.className = 'fgs-gpa-core-estimate-note';
-			coreDisclaimer.textContent = 'Core GPA is a rough estimate. Focus does not identify core classes.';
-			summaryRowsDiv.appendChild(coreDisclaimer);
-		} else if (results.hasCoreClasses) {
-			const coreNote = document.createElement('div');
-			coreNote.className = 'fgs-forgiveness-core-note';
-			coreNote.textContent = 'Core GPA will also be affected. Show all course history years for exact numbers.';
-			container.appendChild(coreNote);
-		}
-
 	} catch (error) {
 		// Silent error handling
 	}
@@ -2533,7 +2180,6 @@ function addManualForgivenessClass() {
 			name: 'Manual Class ' + manualForgivenessCounter,
 			year: '',
 			type: 'Regular',
-			isCore: false,
 			credits: 0.5,
 			semesterType: 'S1',
 			semesterGrade: 'F',
@@ -2552,8 +2198,7 @@ function addManualForgivenessClass() {
 			oldType: 'Regular',
 			newGrade: 'C',
 			newCredits: 0.5,
-			newType: 'Regular',
-			isCore: false
+			newType: 'Regular'
 		});
 
 		calculateForgiveness();
@@ -2575,67 +2220,6 @@ function removeManualForgivenessClass(classId) {
 	} catch (error) {
 		// Silent error handling
 	}
-}
-
-/**
- * Shows the Core GPA accuracy help popup
- */
-function showCoreGPAHelp() {
-	const existing = document.getElementById('fgs-core-gpa-help-overlay');
-	if (existing) { existing.remove(); return; }
-
-	const overlay = document.createElement('div');
-	overlay.id = 'fgs-core-gpa-help-overlay';
-	overlay.className = 'fgs-core-gpa-help-overlay';
-
-	const popup = document.createElement('div');
-	popup.className = 'fgs-core-gpa-help-popup';
-
-	const closeBtn = document.createElement('span');
-	closeBtn.className = 'fgs-core-gpa-help-close';
-	closeBtn.textContent = '\u00D7';
-	closeBtn.addEventListener('click', () => overlay.remove());
-
-	const title = document.createElement('h4');
-	title.textContent = 'How to Get the Most Accurate Core GPA';
-
-	const steps = document.createElement('ol');
-	steps.className = 'fgs-core-gpa-help-steps';
-	const stepTexts = [
-		'Go to your <strong>Grades</strong> page in Focus.',
-		'Scroll down to your <strong>course history</strong> section.',
-		'Make sure <strong>all years</strong> are visible \u2014 from freshman year all the way to your current year. Click "Show All Years" if available.',
-		'Set the <strong>page size</strong> to the maximum so all classes are on one page (not paginated).',
-		'Verify that <strong>semester grades (S1, S2)</strong> are showing for each year. Enable "Show Exams" if needed.',
-		'Make sure no classes are filtered out \u2014 click "Clear All Filters" if filters are on.',
-		'Then open the GPA Calculator \u2014 it will automatically scan your past core classes and calculate your baseline.'
-	];
-	stepTexts.forEach(text => {
-		const li = document.createElement('li');
-		li.innerHTML = text;
-		steps.appendChild(li);
-	});
-
-	const disclaimer = document.createElement('div');
-	disclaimer.className = 'fgs-core-gpa-help-formula';
-	disclaimer.innerHTML = '<strong>Important:</strong> Focus does not identify which classes are core. This tool uses its best guess based on course names. Core GPA is a <strong>rough estimate</strong>, not an exact value.';
-
-	const note = document.createElement('p');
-	note.className = 'fgs-core-gpa-help-note';
-	note.textContent = 'The calculator scans your course history automatically. It does not matter what grade you are in \u2014 it detects all past years and core subjects on its own. Classes from other gradebook systems (e.g., Pinnacle) may only show a final year grade, which is used as a fallback.';
-
-	popup.appendChild(closeBtn);
-	popup.appendChild(title);
-	popup.appendChild(steps);
-	popup.appendChild(disclaimer);
-	popup.appendChild(note);
-	overlay.appendChild(popup);
-
-	overlay.addEventListener('click', (e) => {
-		if (e.target === overlay) overlay.remove();
-	});
-
-	document.body.appendChild(overlay);
 }
 
 /**
@@ -2671,13 +2255,6 @@ function renderResults() {
         }
         if (weightedBase !== null || weightedNew !== null) {
             summaryRows.push(buildGPASummaryRow('Weighted GPA', weightedBase, weightedNew, weightedDelta, ''));
-        }
-        const coreBase = baseline?.coreGPA ?? baseline?.computedCoreGPA ?? null;
-        const coreNew = projected.coreProjected ?? projected.core ?? null;
-        const coreNewDelta = projected.coreDelta ?? null;
-        if (coreBase !== null || coreNew !== null) {
-            summaryRows.push(buildGPASummaryRow('Core GPA', coreBase, coreNew, coreNewDelta, ''));
-            summaryRows.push('<div class="fgs-gpa-core-estimate-note">Core GPA is a rough estimate. Focus does not identify core classes.</div>');
         }
         const summaryHTML = summaryRows.length ? `<div class="fgs-gpa-summary-rows">${summaryRows.join('')}</div>` : '';
 

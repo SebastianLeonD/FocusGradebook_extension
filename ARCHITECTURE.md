@@ -30,8 +30,8 @@ User clicks extension icon
 
 | Function | Params | Returns | Description |
 |----------|--------|---------|-------------|
-| `isFocusUrl(url)` | `string` | `boolean` | Checks if URL contains `focusschoolsoftware.com` |
-| `updateIconBehavior(tabId, url)` | `number, string` | `void` | Sets popup to `wrong_page.html` on non-Focus URLs, clears popup on Focus URLs so `onClicked` fires |
+| `isFocusUrl(url)` | `string` | `boolean` | True only for a class grades page (`Grades/StudentGBGrades.php`) or the Grades tab (`Grades/StudentRCGrades.php`); Portal and other Focus pages get the wrong-page popup |
+| `updateIconBehavior(tabId, url)` | `number, string` | `void` | Sets popup to `wrong_page.html` on non-grades URLs, clears popup on Focus URLs so `onClicked` fires |
 
 ### Listeners
 - `chrome.tabs.onUpdated` — Re-checks URL on navigation

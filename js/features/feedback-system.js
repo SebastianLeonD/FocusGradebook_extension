@@ -341,16 +341,11 @@ function openNewFeaturesModal() {
                     <!-- MAIN FEATURE - Top 50% of screen -->
                     <div class="fgs-feature-card fgs-feature-main">
                         <div class="fgs-feature-badge-container">
-                            <span class="fgs-feature-badge fgs-badge-new">NEW</span>
+                            <span class="fgs-feature-badge fgs-badge-fixed">REMOVED</span>
                         </div>
-                        <div class="fgs-feature-icon">🎯</div>
-                        <h3 class="fgs-feature-title">Core GPA Calculator</h3>
-                        <p class="fgs-feature-description">The GPA Calculator now shows your Core GPA alongside Cumulative and Weighted. Uses the correct BCPS core bonuses (+0.5 Honors, +1.0 AP/IB) and projects how this semester affects your core GPA.</p>
-                        <div class="fgs-feature-tags">
-                            <span class="fgs-feature-tag">Core GPA</span>
-                            <span class="fgs-feature-tag">BCPS Formula</span>
-                            <span class="fgs-feature-tag">Semester Projection</span>
-                        </div>
+                        <div class="fgs-feature-icon">🗑️</div>
+                        <h3 class="fgs-feature-title">Core GPA Removed</h3>
+                        <p class="fgs-feature-description">Core GPA has been removed from the GPA Calculator.</p>
                     </div>
 
                     <!-- SECONDARY FEATURE - Bottom left 25% -->
